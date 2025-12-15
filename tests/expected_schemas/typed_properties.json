@@ -1,0 +1,33 @@
+{
+  "id": "typed_properties",
+  "name": "Typed Properties via Context",
+  "description": "Type coercion from @context maps to JSON Schema types",
+  "frame": {
+    "@context": {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "ex": "http://example.org/vocab#",
+      "ex:age": { "@id": "http://example.org/vocab#age", "@type": "xsd:integer" },
+      "ex:height": { "@id": "http://example.org/vocab#height", "@type": "xsd:double" },
+      "ex:active": { "@id": "http://example.org/vocab#active", "@type": "xsd:boolean" },
+      "ex:birthDate": { "@id": "http://example.org/vocab#birthDate", "@type": "xsd:date" }
+    },
+    "@type": "ex:Person",
+    "ex:age": {},
+    "ex:height": {},
+    "ex:active": {},
+    "ex:birthDate": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "const": "ex:Person" },
+      "ex:age": { "type": "integer" },
+      "ex:height": { "type": "number" },
+      "ex:active": { "type": "boolean" },
+      "ex:birthDate": { "type": "string", "format": "date" }
+    },
+    "required": ["@type", "ex:age", "ex:height", "ex:active", "ex:birthDate"],
+    "additionalProperties": true
+  }
+}

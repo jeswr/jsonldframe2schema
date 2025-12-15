@@ -1,0 +1,33 @@
+{
+  "id": "array_frame",
+  "name": "Array Frame",
+  "description": "Array in frame becomes array schema with items",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#"
+    },
+    "@type": "ex:Person",
+    "ex:knows": [{ "@type": "ex:Person", "ex:name": {} }]
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "const": "ex:Person" },
+      "ex:knows": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "ex:Person" },
+            "ex:name": { "type": "string" }
+          },
+          "required": ["@type", "ex:name"],
+          "additionalProperties": true
+        }
+      }
+    },
+    "required": ["@type", "ex:knows"],
+    "additionalProperties": true
+  }
+}

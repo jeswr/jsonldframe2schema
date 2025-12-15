@@ -1,0 +1,22 @@
+{
+  "id": "match_none_type",
+  "name": "Match None @type (empty array)",
+  "description": "Empty array for @type acts as wildcard",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#"
+    },
+    "@type": [],
+    "ex:name": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "type": "string" },
+      "ex:name": { "type": "string" }
+    },
+    "required": ["ex:name"],
+    "additionalProperties": true
+  }
+}

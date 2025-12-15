@@ -1,0 +1,35 @@
+{
+  "id": "basic_person",
+  "name": "Basic Person Frame with Nested Object",
+  "description": "Library frame with nested Book - basic structure test",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#"
+    },
+    "@type": "ex:Library",
+    "ex:contains": {
+      "@type": "ex:Book",
+      "ex:title": {},
+      "ex:author": {}
+    }
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "const": "ex:Library" },
+      "ex:contains": {
+        "type": "object",
+        "properties": {
+          "@type": { "const": "ex:Book" },
+          "ex:title": { "type": "string" },
+          "ex:author": { "type": "string" }
+        },
+        "required": ["@type", "ex:title", "ex:author"],
+        "additionalProperties": true
+      }
+    },
+    "required": ["@type", "ex:contains"],
+    "additionalProperties": true
+  }
+}

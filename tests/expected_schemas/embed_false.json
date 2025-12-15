@@ -1,0 +1,32 @@
+{
+  "id": "embed_false",
+  "name": "@embed: false",
+  "description": "Non-embedded objects become ID references",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#"
+    },
+    "@type": "ex:Person",
+    "ex:knows": { "@type": "ex:Person", "@embed": false }
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "const": "ex:Person" },
+      "ex:knows": {
+        "oneOf": [
+          { "type": "string", "format": "uri" },
+          {
+            "type": "object",
+            "properties": { "@id": { "type": "string", "format": "uri" } },
+            "required": ["@id"],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": ["@type", "ex:knows"],
+    "additionalProperties": true
+  }
+}

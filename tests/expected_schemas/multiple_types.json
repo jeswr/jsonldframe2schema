@@ -1,0 +1,22 @@
+{
+  "id": "multiple_types",
+  "name": "Multiple Types in @type",
+  "description": "Array of types in frame uses enum in schema",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#"
+    },
+    "@type": ["ex:Person", "ex:Agent"],
+    "ex:name": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "enum": ["ex:Person", "ex:Agent"] },
+      "ex:name": { "type": "string" }
+    },
+    "required": ["@type", "ex:name"],
+    "additionalProperties": true
+  }
+}

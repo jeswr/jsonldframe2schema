@@ -1,0 +1,22 @@
+{
+  "id": "wildcard_id",
+  "name": "Wildcard @id (empty object)",
+  "description": "Empty object for @id requires URI format",
+  "frame": {
+    "@context": {
+      "@vocab": "http://schema.org/"
+    },
+    "@id": {},
+    "name": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@id": { "type": "string", "format": "uri" },
+      "name": { "type": "string" }
+    },
+    "required": ["name"],
+    "additionalProperties": true
+  }
+}

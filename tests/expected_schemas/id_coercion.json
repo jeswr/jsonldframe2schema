@@ -1,0 +1,23 @@
+{
+  "id": "id_coercion",
+  "name": "@id Type Coercion",
+  "description": "@type: @id in context maps to URI format",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#",
+      "ex:homepage": { "@id": "http://example.org/vocab#homepage", "@type": "@id" }
+    },
+    "@type": "ex:Person",
+    "ex:homepage": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "const": "ex:Person" },
+      "ex:homepage": { "type": "string" }
+    },
+    "required": ["@type", "ex:homepage"],
+    "additionalProperties": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "wildcard_type",
+  "name": "Wildcard @type (empty object)",
+  "description": "Empty object for @type allows any type",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#"
+    },
+    "@type": {},
+    "ex:name": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "type": "string" },
+      "ex:name": { "type": "string" }
+    },
+    "required": ["ex:name"],
+    "additionalProperties": true
+  }
+}

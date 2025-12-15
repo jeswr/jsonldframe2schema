@@ -1,0 +1,22 @@
+{
+  "id": "id_match",
+  "name": "Specific @id Match",
+  "description": "Specific @id value becomes const in schema",
+  "frame": {
+    "@context": {
+      "@vocab": "http://schema.org/"
+    },
+    "@id": "http://example.org/library",
+    "name": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@id": { "const": "http://example.org/library" },
+      "name": { "type": "string" }
+    },
+    "required": ["@id", "name"],
+    "additionalProperties": true
+  }
+}

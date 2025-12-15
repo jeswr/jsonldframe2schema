@@ -1,0 +1,25 @@
+{
+  "id": "explicit_frame",
+  "name": "Explicit Frame (@explicit: true)",
+  "description": "Frame with @explicit: true should disallow additional properties",
+  "frame": {
+    "@context": {
+      "ex": "http://example.org/vocab#"
+    },
+    "@type": "ex:Person",
+    "@explicit": true,
+    "ex:name": {},
+    "ex:email": {}
+  },
+  "expected_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "@type": { "const": "ex:Person" },
+      "ex:name": { "type": "string" },
+      "ex:email": { "type": "string" }
+    },
+    "required": ["@type", "ex:name", "ex:email"],
+    "additionalProperties": false
+  }
+}
