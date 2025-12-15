@@ -1,3 +1,7 @@
 {
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "Agent": "http://schema.org/Agent"
+  },
   "@type": ["Person", "Agent"]
 }

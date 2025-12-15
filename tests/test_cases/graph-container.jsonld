@@ -1,4 +1,7 @@
 {
+  "@context": {
+    "@vocab": "http://schema.org/"
+  },
   "@graph": [{
     "@type": "Person",
     "name": {}

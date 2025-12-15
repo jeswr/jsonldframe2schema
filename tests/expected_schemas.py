@@ -86,7 +86,12 @@ NON_EXPLICIT_EXPECTED_SCHEMA = {
 
 # Test Case 4: Multiple Types in Frame (inspired by t0007 - input has multiple types)
 # Frame with multiple @type values uses enum
-MULTIPLE_TYPES_FRAME = {"@type": ["ex:Person", "ex:Agent"]}
+MULTIPLE_TYPES_FRAME = {
+    "@context": {
+        "ex": "http://example.org/vocab#"
+    },
+    "@type": ["ex:Person", "ex:Agent"]
+}
 
 MULTIPLE_TYPES_EXPECTED_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -99,7 +104,12 @@ MULTIPLE_TYPES_EXPECTED_SCHEMA = {
 
 # Test Case 5: Wildcard @type (inspired by t0016 - Use @type in ducktype filter)
 # Empty dict for @type means match any type
-WILDCARD_TYPE_FRAME = {"@type": {}}
+WILDCARD_TYPE_FRAME = {
+    "@context": {
+        "@vocab": "http://schema.org/"
+    },
+    "@type": {}
+}
 
 WILDCARD_TYPE_EXPECTED_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -112,7 +122,13 @@ WILDCARD_TYPE_EXPECTED_SCHEMA = {
 
 # Test Case 6: @id Match (inspired by t0022 - Match on @id)
 # Specific @id value constraint
-ID_MATCH_FRAME = {"@id": "http://example.org/person/1", "name": {}}
+ID_MATCH_FRAME = {
+    "@context": {
+        "@vocab": "http://schema.org/"
+    },
+    "@id": "http://example.org/person/1",
+    "name": {}
+}
 
 ID_MATCH_EXPECTED_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -129,7 +145,13 @@ ID_MATCH_EXPECTED_SCHEMA = {
 # Test Case 7: Wildcard @id (empty object)
 # Note: Wildcard @id ({}) means @id must be present as URI but is not required
 # in the current implementation (only specific @id values are required)
-WILDCARD_ID_FRAME = {"@id": {}, "name": {}}
+WILDCARD_ID_FRAME = {
+    "@context": {
+        "@vocab": "http://schema.org/"
+    },
+    "@id": {},
+    "name": {}
+}
 
 WILDCARD_ID_EXPECTED_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -146,6 +168,9 @@ WILDCARD_ID_EXPECTED_SCHEMA = {
 # Test Case 8: @requireAll (inspired by t0024 - match on any common properties)
 # When @requireAll is true, all properties are required
 REQUIRE_ALL_FRAME = {
+    "@context": {
+        "ex": "http://example.org/vocab#"
+    },
     "@requireAll": True,
     "@type": "ex:Person",
     "ex:name": {},
@@ -168,6 +193,9 @@ REQUIRE_ALL_EXPECTED_SCHEMA = {
 # Test Case 9: @embed false (inspired by t0011 - @embed true/false)
 # When @embed is false, only reference is included
 EMBED_FALSE_FRAME = {
+    "@context": {
+        "ex": "http://example.org/vocab#"
+    },
     "@type": "ex:Person",
     "ex:knows": {"@type": "ex:Person", "@embed": False},
 }
@@ -197,6 +225,9 @@ EMBED_FALSE_EXPECTED_SCHEMA = {
 # Test Case 10: Array Frame (inspired by t0008 - array framing cases)
 # Array of objects in frame
 ARRAY_FRAME = {
+    "@context": {
+        "ex": "http://example.org/vocab#"
+    },
     "@type": "ex:Person",
     "ex:knows": [{"@type": "ex:Person", "ex:name": {}}],
 }
@@ -272,7 +303,13 @@ EMPTY_EXPECTED_SCHEMA = {
 
 # Test Case 13: Match None @type (inspired by t0031 - match none @type match)
 # Empty array for @type means no @type allowed
-MATCH_NONE_TYPE_FRAME = {"@type": [], "ex:name": {}}
+MATCH_NONE_TYPE_FRAME = {
+    "@context": {
+        "ex": "http://example.org/vocab#"
+    },
+    "@type": [],
+    "ex:name": {}
+}
 
 MATCH_NONE_TYPE_EXPECTED_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -288,6 +325,9 @@ MATCH_NONE_TYPE_EXPECTED_SCHEMA = {
 
 # Test Case 14: Nested Explicit Frame
 NESTED_EXPLICIT_FRAME = {
+    "@context": {
+        "ex": "http://example.org/vocab#"
+    },
     "@type": "ex:Organization",
     "@explicit": True,
     "ex:name": {},
@@ -343,6 +383,9 @@ ID_COERCION_EXPECTED_SCHEMA = {
 
 # Test Case 16: Multiple @id values (inspired by t0033 - multiple @id match)
 MULTIPLE_ID_FRAME = {
+    "@context": {
+        "@vocab": "http://schema.org/"
+    },
     "@id": ["http://example.org/1", "http://example.org/2"],
     "name": {},
 }

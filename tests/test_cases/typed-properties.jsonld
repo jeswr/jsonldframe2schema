@@ -1,10 +1,18 @@
 {
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "startDate": {
+      "@id": "http://schema.org/startDate",
+      "@type": "xsd:dateTime"
+    },
+    "attendeeCount": {
+      "@id": "http://schema.org/attendeeCount",
+      "@type": "xsd:integer"
+    }
+  },
   "@type": "Event",
   "name": {},
-  "startDate": {
-    "@type": "xsd:dateTime"
-  },
-  "attendeeCount": {
-    "@type": "xsd:integer"
-  }
+  "startDate": {},
+  "attendeeCount": {}
 }

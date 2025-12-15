@@ -9,24 +9,11 @@
       "type": "string"
     },
     "startDate": {
-      "type": "object",
-      "properties": {
-        "@type": {
-          "const": "xsd:dateTime"
-        }
-      },
-      "required": ["@type"],
-      "additionalProperties": true
+      "type": "string",
+      "format": "date-time"
     },
     "attendeeCount": {
-      "type": "object",
-      "properties": {
-        "@type": {
-          "const": "xsd:integer"
-        }
-      },
-      "required": ["@type"],
-      "additionalProperties": true
+      "type": "integer"
     }
   },
   "required": ["@type", "name", "startDate", "attendeeCount"],

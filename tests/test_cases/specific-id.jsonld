@@ -1,4 +1,7 @@
 {
+  "@context": {
+    "@vocab": "http://schema.org/"
+  },
   "@id": "http://example.org/person/1",
   "name": {}
 }
