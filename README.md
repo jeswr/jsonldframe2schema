@@ -2,6 +2,8 @@
 
 A Python library that converts JSON-LD 1.1 Frames into JSON Schema documents for validation purposes.
 
+> ⚠️ **Warning:** This library is under active development and unstable. Additionally, it has been largely implemented by AI copilots and remains largely unreviewed by humans at this stage. Use with caution.
+
 ## Overview
 
 This library maps [JSON-LD 1.1 Framing](https://www.w3.org/TR/json-ld11-framing/) concepts to [JSON Schema](https://json-schema.org/) validation constructs. It allows you to define the expected structure of JSON-LD documents using frames and automatically generate corresponding JSON Schema documents.
