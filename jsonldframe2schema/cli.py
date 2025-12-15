@@ -39,9 +39,6 @@ Examples:
   
   # Read from stdin and write to stdout
   cat frame.json | %(prog)s
-  
-  # Read from stdin and save to file
-  cat frame.json | %(prog)s -o schema.json
         """
     )
     
@@ -55,12 +52,6 @@ Examples:
         "output",
         nargs="?",
         help="Output JSON Schema file (default: stdout)"
-    )
-    
-    parser.add_argument(
-        "-o", "--output",
-        dest="output_flag",
-        help="Output file (alternative to positional argument)"
     )
     
     parser.add_argument(
@@ -85,7 +76,7 @@ Examples:
     args = parser.parse_args(argv)
     
     # Determine output file
-    output_file = args.output or args.output_flag
+    output_file = args.output
     
     try:
         # Read input frame

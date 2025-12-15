@@ -59,7 +59,7 @@ def validate_person_document():
         validate(instance=valid_doc, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     # Invalid document - missing required field
     invalid_doc_1 = {
@@ -75,7 +75,7 @@ def validate_person_document():
         validate(instance=invalid_doc_1, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     # Invalid document - wrong type for age
     invalid_doc_2 = {
@@ -92,7 +92,7 @@ def validate_person_document():
         validate(instance=invalid_doc_2, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     print()
 
@@ -130,7 +130,7 @@ def validate_explicit_frame():
         validate(instance=valid_doc, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     # Invalid document - additional property
     invalid_doc = {
@@ -147,7 +147,7 @@ def validate_explicit_frame():
         validate(instance=invalid_doc, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     print()
 
@@ -191,7 +191,7 @@ def validate_nested_objects():
         validate(instance=valid_doc, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     # Invalid - missing nested property
     invalid_doc = {
@@ -211,7 +211,7 @@ def validate_nested_objects():
         validate(instance=invalid_doc, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     print()
 
@@ -253,7 +253,7 @@ def validate_arrays():
         validate(instance=valid_doc, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     # Invalid - array item missing property
     invalid_doc = {
@@ -272,7 +272,7 @@ def validate_arrays():
         validate(instance=invalid_doc, schema=schema)
         print("✓ Validation passed!")
     except ValidationError as e:
-        print(f"✗ Validation failed: {e.message}")
+        print(f"✗ Validation failed: {str(e).split("\n")[0]}")
     
     print()
 

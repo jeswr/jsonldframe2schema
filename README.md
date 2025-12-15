@@ -161,9 +161,6 @@ python -m jsonldframe2schema frame.json schema.json
 
 # Read from stdin and write to stdout
 cat frame.json | python -m jsonldframe2schema
-
-# Read from stdin and save to file
-cat frame.json | python -m jsonldframe2schema -o schema.json
 ```
 
 ### CLI Options
@@ -173,8 +170,6 @@ python -m jsonldframe2schema --help
 
 Options:
   -h, --help            Show help message
-  -o OUTPUT, --output OUTPUT
-                        Output file (alternative to positional argument)
   --schema-version SCHEMA_VERSION
                         JSON Schema version URI (default: draft 2020-12)
   --indent INDENT       JSON indentation (default: 2)
