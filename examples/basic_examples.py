@@ -10,7 +10,7 @@ import sys
 import os
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from jsonldframe2schema import frame_to_schema
 
@@ -20,26 +20,23 @@ def example_basic_person():
     print("=" * 70)
     print("Example 1: Basic Person Frame")
     print("=" * 70)
-    
+
     frame = {
         "@context": {
             "xsd": "http://www.w3.org/2001/XMLSchema#",
             "name": "http://schema.org/name",
-            "age": {
-                "@id": "http://schema.org/age",
-                "@type": "xsd:integer"
-            }
+            "age": {"@id": "http://schema.org/age", "@type": "xsd:integer"},
         },
         "@type": "Person",
         "name": {},
-        "age": {}
+        "age": {},
     }
-    
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -50,7 +47,7 @@ def example_nested_address():
     print("=" * 70)
     print("Example 2: Person with Nested Address")
     print("=" * 70)
-    
+
     frame = {
         "@type": "Person",
         "@explicit": True,
@@ -59,15 +56,15 @@ def example_nested_address():
             "@type": "PostalAddress",
             "streetAddress": {},
             "addressLocality": {},
-            "postalCode": {}
-        }
+            "postalCode": {},
+        },
     }
-    
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -78,21 +75,14 @@ def example_array_properties():
     print("=" * 70)
     print("Example 3: Person with Array of Friends")
     print("=" * 70)
-    
-    frame = {
-        "@type": "Person",
-        "name": {},
-        "knows": [{
-            "@type": "Person",
-            "name": {}
-        }]
-    }
-    
+
+    frame = {"@type": "Person", "name": {}, "knows": [{"@type": "Person", "name": {}}]}
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -103,21 +93,18 @@ def example_non_embedded_reference():
     print("=" * 70)
     print("Example 4: Non-Embedded Reference")
     print("=" * 70)
-    
+
     frame = {
         "@type": "Article",
         "title": {},
-        "author": {
-            "@embed": False,
-            "@type": "Person"
-        }
+        "author": {"@embed": False, "@type": "Person"},
     }
-    
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -128,18 +115,14 @@ def example_multiple_types():
     print("=" * 70)
     print("Example 5: Multiple Type Options")
     print("=" * 70)
-    
-    frame = {
-        "@type": ["Person", "Organization"],
-        "name": {},
-        "@id": {}
-    }
-    
+
+    frame = {"@type": ["Person", "Organization"], "name": {}, "@id": {}}
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -151,7 +134,7 @@ if __name__ == "__main__":
     example_array_properties()
     example_non_embedded_reference()
     example_multiple_types()
-    
+
     print("=" * 70)
     print("All examples completed successfully!")
     print("=" * 70)

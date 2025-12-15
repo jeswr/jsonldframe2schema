@@ -49,7 +49,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Check formatting with black
-        run: black --check jsonldframe2schema tests
+        run: black --check jsonldframe2schema tests examples
 
       - name: Lint with flake8
         run: flake8 jsonldframe2schema tests --max-line-length=120

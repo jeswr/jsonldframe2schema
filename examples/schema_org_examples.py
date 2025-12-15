@@ -10,7 +10,7 @@ import sys
 import os
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from jsonldframe2schema import frame_to_schema
 
@@ -20,19 +20,13 @@ def schema_org_person():
     print("=" * 70)
     print("Schema.org Person Example")
     print("=" * 70)
-    
+
     frame = {
         "@context": {
             "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
-            "birthDate": {
-                "@id": "http://schema.org/birthDate",
-                "@type": "xsd:date"
-            },
-            "age": {
-                "@id": "http://schema.org/age",
-                "@type": "xsd:integer"
-            }
+            "birthDate": {"@id": "http://schema.org/birthDate", "@type": "xsd:date"},
+            "age": {"@id": "http://schema.org/age", "@type": "xsd:integer"},
         },
         "@type": "Person",
         "@id": {},
@@ -45,15 +39,15 @@ def schema_org_person():
             "addressLocality": {},
             "addressRegion": {},
             "postalCode": {},
-            "addressCountry": {}
-        }
+            "addressCountry": {},
+        },
     }
-    
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -64,15 +58,15 @@ def schema_org_organization():
     print("=" * 70)
     print("Schema.org Organization Example")
     print("=" * 70)
-    
+
     frame = {
         "@context": {
             "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
             "foundingDate": {
                 "@id": "http://schema.org/foundingDate",
-                "@type": "xsd:date"
-            }
+                "@type": "xsd:date",
+            },
         },
         "@type": "Organization",
         "@id": {},
@@ -84,20 +78,16 @@ def schema_org_organization():
             "@type": "PostalAddress",
             "streetAddress": {},
             "addressLocality": {},
-            "addressCountry": {}
+            "addressCountry": {},
         },
-        "member": [{
-            "@type": "Person",
-            "name": {},
-            "jobTitle": {}
-        }]
+        "member": [{"@type": "Person", "name": {}, "jobTitle": {}}],
     }
-    
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -108,42 +98,33 @@ def schema_org_article():
     print("=" * 70)
     print("Schema.org Article Example (with references)")
     print("=" * 70)
-    
+
     frame = {
         "@context": {
             "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
             "datePublished": {
                 "@id": "http://schema.org/datePublished",
-                "@type": "xsd:dateTime"
+                "@type": "xsd:dateTime",
             },
-            "wordCount": {
-                "@id": "http://schema.org/wordCount",
-                "@type": "xsd:integer"
-            }
+            "wordCount": {"@id": "http://schema.org/wordCount", "@type": "xsd:integer"},
         },
         "@type": "Article",
         "@explicit": True,
         "@id": {},
         "headline": {},
         "alternativeHeadline": {},
-        "author": {
-            "@embed": False,
-            "@type": "Person"
-        },
-        "publisher": {
-            "@embed": False,
-            "@type": "Organization"
-        },
+        "author": {"@embed": False, "@type": "Person"},
+        "publisher": {"@embed": False, "@type": "Organization"},
         "datePublished": {},
-        "wordCount": {}
+        "wordCount": {},
     }
-    
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -154,19 +135,16 @@ def schema_org_event():
     print("=" * 70)
     print("Schema.org Event Example")
     print("=" * 70)
-    
+
     frame = {
         "@context": {
             "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
             "startDate": {
                 "@id": "http://schema.org/startDate",
-                "@type": "xsd:dateTime"
+                "@type": "xsd:dateTime",
             },
-            "endDate": {
-                "@id": "http://schema.org/endDate",
-                "@type": "xsd:dateTime"
-            }
+            "endDate": {"@id": "http://schema.org/endDate", "@type": "xsd:dateTime"},
         },
         "@type": "Event",
         "@id": {},
@@ -180,24 +158,18 @@ def schema_org_event():
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": {},
-                "addressLocality": {}
-            }
+                "addressLocality": {},
+            },
         },
-        "organizer": {
-            "@type": ["Person", "Organization"],
-            "name": {}
-        },
-        "performer": [{
-            "@type": ["Person", "PerformingGroup"],
-            "name": {}
-        }]
+        "organizer": {"@type": ["Person", "Organization"], "name": {}},
+        "performer": [{"@type": ["Person", "PerformingGroup"], "name": {}}],
     }
-    
+
     print("\nInput Frame:")
     print(json.dumps(frame, indent=2))
-    
+
     schema = frame_to_schema(frame)
-    
+
     print("\nGenerated Schema:")
     print(json.dumps(schema, indent=2))
     print()
@@ -208,7 +180,7 @@ if __name__ == "__main__":
     schema_org_organization()
     schema_org_article()
     schema_org_event()
-    
+
     print("=" * 70)
     print("All Schema.org examples completed!")
     print("=" * 70)
