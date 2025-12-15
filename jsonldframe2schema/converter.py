@@ -135,18 +135,15 @@ class FrameToSchemaConverter:
                     # Skip JSON-LD keywords
                     if key.startswith("@"):
                         continue
-                    # Skip namespace prefix definitions (simple string URIs)
+                    
+                    # Skip simple string mappings (both prefix definitions and simple property URIs)
                     if isinstance(value, str):
-                        # This is either a simple property mapping or a prefix definition
-                        # Store as None (no type coercion)
-                        if not value.startswith("http://") and not value.startswith("https://"):
-                            type_map[key] = None
                         continue
                     
                     # Check if this property definition has type coercion
                     if isinstance(value, dict) and "@type" in value:
                         # Use pyld.expand() to resolve the type URI
-                        test_doc = {"@context": context, key: "dummy_value"}
+                        test_doc = {"@context": context, key: "test_value"}
                         try:
                             expanded = jsonld.expand(test_doc)
                             # Extract type from expanded document
