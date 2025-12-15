@@ -23,6 +23,7 @@ def schema_org_person():
     
     frame = {
         "@context": {
+            "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
             "birthDate": {
                 "@id": "http://schema.org/birthDate",
@@ -66,6 +67,7 @@ def schema_org_organization():
     
     frame = {
         "@context": {
+            "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
             "foundingDate": {
                 "@id": "http://schema.org/foundingDate",
@@ -109,6 +111,7 @@ def schema_org_article():
     
     frame = {
         "@context": {
+            "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
             "datePublished": {
                 "@id": "http://schema.org/datePublished",
@@ -154,6 +157,7 @@ def schema_org_event():
     
     frame = {
         "@context": {
+            "xsd": "http://www.w3.org/2001/XMLSchema#",
             "@vocab": "http://schema.org/",
             "startDate": {
                 "@id": "http://schema.org/startDate",

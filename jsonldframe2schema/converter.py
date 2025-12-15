@@ -18,8 +18,10 @@ class FrameToSchemaConverter:
     to JSON Schema validation constructs as defined in MAPPING.md and ALGORITHM.md.
     """
     
-    # JSON-LD to JSON Schema type mappings (using expanded URIs only)
-    # These mappings use the full URIs that pyld expands to
+    # JSON-LD to JSON Schema type mappings
+    # Maps expanded type URIs to JSON Schema types
+    # Note: Contexts should properly define prefixes (e.g., "xsd": "http://www.w3.org/2001/XMLSchema#")
+    # for pyld to expand them correctly
     TYPE_MAPPINGS = {
         "@id": {"type": "string", "format": "uri"},
         "http://www.w3.org/2001/XMLSchema#string": {"type": "string"},
@@ -112,15 +114,14 @@ class FrameToSchemaConverter:
         """
         Parse JSON-LD context to extract type coercion information using pyld.
         
-        This method uses pyld to properly expand the context, handling custom
-        prefixes and namespaces correctly. It automatically adds common prefixes
-        like 'xsd' if they are used but not defined.
+        This method uses only pyld's expand() function to extract type information,
+        without any custom context parsing logic.
         
         Args:
             context: JSON-LD context (string, dict, or list)
             
         Returns:
-            Dictionary mapping property names to their expanded type URIs
+            Dictionary mapping property names to their type URIs (expanded or prefixed)
         """
         type_map: Dict[str, Optional[str]] = {}
         
@@ -128,66 +129,50 @@ class FrameToSchemaConverter:
             return type_map
         
         try:
-            # Ensure context is a dict we can work with
-            working_context = context
-            
-            # If it's a dict, check if we need to add common prefixes
+            # Process dictionary contexts
             if isinstance(context, dict):
-                # Check if xsd prefix is used but not defined
-                needs_xsd = False
                 for key, value in context.items():
-                    if isinstance(value, dict) and "@type" in value:
-                        type_val = value["@type"]
-                        if isinstance(type_val, str) and type_val.startswith("xsd:"):
-                            if "xsd" not in context:
-                                needs_xsd = True
-                                break
-                
-                # Add xsd prefix if needed
-                if needs_xsd:
-                    working_context = copy.deepcopy(context)
-                    working_context["xsd"] = "http://www.w3.org/2001/XMLSchema#"
-            
-            # Process the context
-            if isinstance(working_context, dict):
-                for key, value in working_context.items():
-                    if key in ("@vocab", "@base", "@language", "@version", "xsd", "rdf", "rdfs"):
+                    # Skip JSON-LD keywords
+                    if key.startswith("@"):
+                        continue
+                    # Skip namespace prefix definitions (simple string URIs)
+                    if isinstance(value, str):
+                        # This is either a simple property mapping or a prefix definition
+                        # Store as None (no type coercion)
+                        if not value.startswith("http://") and not value.startswith("https://"):
+                            type_map[key] = None
                         continue
                     
-                    # Check if this property has type coercion defined
+                    # Check if this property definition has type coercion
                     if isinstance(value, dict) and "@type" in value:
-                        # Create a test document with this property
-                        prop_doc = {
-                            "@context": working_context,
-                            key: "test_value"
-                        }
-                        
+                        # Use pyld.expand() to resolve the type URI
+                        test_doc = {"@context": context, key: "dummy_value"}
                         try:
-                            # Expand to get the full URI for the type
-                            expanded = jsonld.expand(prop_doc)
+                            expanded = jsonld.expand(test_doc)
+                            # Extract type from expanded document
                             if expanded and len(expanded) > 0:
-                                # Find the property in the expanded document
                                 for prop_uri, prop_values in expanded[0].items():
-                                    if prop_uri.startswith("@"):
-                                        continue
-                                    # Check if the value has type information
-                                    if prop_values and isinstance(prop_values, list) and len(prop_values) > 0:
-                                        if isinstance(prop_values[0], dict) and "@type" in prop_values[0]:
-                                            # Store the expanded type URI
-                                            type_map[key] = prop_values[0]["@type"]
+                                    if not prop_uri.startswith("@"):
+                                        if (prop_values and isinstance(prop_values, list) and
+                                            len(prop_values) > 0 and isinstance(prop_values[0], dict)):
+                                            type_uri = prop_values[0].get("@type")
+                                            if type_uri:
+                                                type_map[key] = type_uri
+                                                break
                         except (jsonld.JsonLdError, ValueError, TypeError):
-                            # If expansion fails for this property, fall back to storing None
+                            # If pyld cannot process this property, store None
                             type_map[key] = None
-                    elif isinstance(value, str):
-                        # Simple string mapping, no type info
+                    elif isinstance(value, dict):
+                        # Property definition without type coercion
                         type_map[key] = None
-            elif isinstance(working_context, list):
-                # Process each context in the array
-                for ctx in working_context:
+                        
+            # Process array contexts (recursively)
+            elif isinstance(context, list):
+                for ctx in context:
                     type_map.update(self._parse_context(ctx))
+                    
         except (jsonld.JsonLdError, ValueError, TypeError, KeyError):
             # If context processing fails entirely, return empty type map
-            # This handles malformed contexts gracefully
             pass
         
         return type_map

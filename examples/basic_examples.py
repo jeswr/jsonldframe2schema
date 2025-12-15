@@ -23,6 +23,7 @@ def example_basic_person():
     
     frame = {
         "@context": {
+            "xsd": "http://www.w3.org/2001/XMLSchema#",
             "name": "http://schema.org/name",
             "age": {
                 "@id": "http://schema.org/age",

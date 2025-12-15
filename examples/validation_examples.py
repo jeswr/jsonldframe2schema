@@ -25,6 +25,7 @@ def validate_person_document():
     # Define frame
     frame = {
         "@context": {
+            "xsd": "http://www.w3.org/2001/XMLSchema#",
             "name": "http://schema.org/name",
             "email": "http://schema.org/email",
             "age": {

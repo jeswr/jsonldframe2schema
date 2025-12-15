@@ -39,6 +39,7 @@ from jsonldframe2schema import frame_to_schema
 # Define a JSON-LD Frame
 frame = {
     "@context": {
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
         "name": "http://schema.org/name",
         "age": {
             "@id": "http://schema.org/age",
