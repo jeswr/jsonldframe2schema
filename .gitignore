@@ -40,6 +40,7 @@ ENV/
 .coverage
 htmlcov/
 .tox/
+tests/jsonld_test_suite/
 
 # MyPy
 .mypy_cache/
