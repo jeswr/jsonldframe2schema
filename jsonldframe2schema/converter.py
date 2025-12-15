@@ -175,8 +175,8 @@ class FrameToSchemaConverter:
                                         if isinstance(prop_values[0], dict) and "@type" in prop_values[0]:
                                             # Store the expanded type URI
                                             type_map[key] = prop_values[0]["@type"]
-                        except Exception:
-                            # If expansion fails, fall back to storing None
+                        except (jsonld.JsonLdError, ValueError, TypeError):
+                            # If expansion fails for this property, fall back to storing None
                             type_map[key] = None
                     elif isinstance(value, str):
                         # Simple string mapping, no type info
@@ -185,8 +185,9 @@ class FrameToSchemaConverter:
                 # Process each context in the array
                 for ctx in working_context:
                     type_map.update(self._parse_context(ctx))
-        except Exception:
-            # If context processing fails, return empty type map
+        except (jsonld.JsonLdError, ValueError, TypeError, KeyError):
+            # If context processing fails entirely, return empty type map
+            # This handles malformed contexts gracefully
             pass
         
         return type_map
