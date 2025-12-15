@@ -1,0 +1,2 @@
+pyld>=2.0.3
+jsonschema>=4.0.0
