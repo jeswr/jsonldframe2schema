@@ -1,0 +1,11 @@
+{
+  "@type": "Article",
+  "author": {
+    "@type": "Person",
+    "name": {}
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": {}
+  }
+}

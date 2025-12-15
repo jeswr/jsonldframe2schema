@@ -1,0 +1,7 @@
+{
+  "@type": "Person",
+  "knows": {
+    "@type": "Person",
+    "@embed": false
+  }
+}

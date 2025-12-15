@@ -1,0 +1,8 @@
+{
+  "@type": "Person",
+  "@reverse": {
+    "author": {
+      "@type": "Book"
+    }
+  }
+}

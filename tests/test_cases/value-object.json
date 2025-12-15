@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": {
+      "const": "Book"
+    },
+    "isbn": {
+      "type": "object",
+      "properties": {
+        "@value": {
+          "type": "string"
+        }
+      },
+      "required": ["@value"],
+      "additionalProperties": true
+    },
+    "title": {
+      "type": "string"
+    }
+  },
+  "required": ["@type", "isbn", "title"],
+  "additionalProperties": true
+}

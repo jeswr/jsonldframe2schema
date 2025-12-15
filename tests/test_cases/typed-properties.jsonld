@@ -1,0 +1,10 @@
+{
+  "@type": "Event",
+  "name": {},
+  "startDate": {
+    "@type": "xsd:dateTime"
+  },
+  "attendeeCount": {
+    "@type": "xsd:integer"
+  }
+}

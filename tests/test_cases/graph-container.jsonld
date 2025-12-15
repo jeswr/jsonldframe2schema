@@ -1,0 +1,6 @@
+{
+  "@graph": [{
+    "@type": "Person",
+    "name": {}
+  }]
+}

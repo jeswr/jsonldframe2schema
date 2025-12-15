@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": {
+      "const": "Person"
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Person"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["@type", "name"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["@type", "children"],
+  "additionalProperties": true
+}

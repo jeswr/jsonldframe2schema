@@ -1,0 +1,10 @@
+{
+  "@type": "Organization",
+  "@explicit": true,
+  "name": {},
+  "employee": {
+    "@type": "Person",
+    "@explicit": true,
+    "name": {}
+  }
+}

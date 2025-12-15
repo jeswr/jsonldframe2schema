@@ -1,0 +1,8 @@
+{
+  "@type": "Person",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": {},
+    "postalCode": {}
+  }
+}
