@@ -7,6 +7,7 @@ JSON-LD 1.1 Frames into JSON Schema documents.
 
 from typing import Any, Dict, List, Optional, Union
 import copy
+from pyld import jsonld
 
 
 class FrameToSchemaConverter:
@@ -17,30 +18,20 @@ class FrameToSchemaConverter:
     to JSON Schema validation constructs as defined in MAPPING.md and ALGORITHM.md.
     """
     
-    # JSON-LD to JSON Schema type mappings
+    # JSON-LD to JSON Schema type mappings (using expanded URIs only)
+    # These mappings use the full URIs that pyld expands to
     TYPE_MAPPINGS = {
         "@id": {"type": "string", "format": "uri"},
-        "xsd:string": {"type": "string"},
         "http://www.w3.org/2001/XMLSchema#string": {"type": "string"},
-        "xsd:integer": {"type": "integer"},
         "http://www.w3.org/2001/XMLSchema#integer": {"type": "integer"},
-        "xsd:int": {"type": "integer"},
         "http://www.w3.org/2001/XMLSchema#int": {"type": "integer"},
-        "xsd:long": {"type": "integer"},
         "http://www.w3.org/2001/XMLSchema#long": {"type": "integer"},
-        "xsd:boolean": {"type": "boolean"},
         "http://www.w3.org/2001/XMLSchema#boolean": {"type": "boolean"},
-        "xsd:double": {"type": "number"},
         "http://www.w3.org/2001/XMLSchema#double": {"type": "number"},
-        "xsd:float": {"type": "number"},
         "http://www.w3.org/2001/XMLSchema#float": {"type": "number"},
-        "xsd:decimal": {"type": "number"},
         "http://www.w3.org/2001/XMLSchema#decimal": {"type": "number"},
-        "xsd:dateTime": {"type": "string", "format": "date-time"},
         "http://www.w3.org/2001/XMLSchema#dateTime": {"type": "string", "format": "date-time"},
-        "xsd:date": {"type": "string", "format": "date"},
         "http://www.w3.org/2001/XMLSchema#date": {"type": "string", "format": "date"},
-        "xsd:time": {"type": "string", "format": "time"},
         "http://www.w3.org/2001/XMLSchema#time": {"type": "string", "format": "time"},
     }
     
@@ -119,29 +110,84 @@ class FrameToSchemaConverter:
     
     def _parse_context(self, context: Union[str, Dict, List]) -> Dict[str, Optional[str]]:
         """
-        Parse JSON-LD context to extract type coercion information.
+        Parse JSON-LD context to extract type coercion information using pyld.
+        
+        This method uses pyld to properly expand the context, handling custom
+        prefixes and namespaces correctly. It automatically adds common prefixes
+        like 'xsd' if they are used but not defined.
         
         Args:
             context: JSON-LD context (string, dict, or list)
             
         Returns:
-            Dictionary mapping property names to their type URIs
+            Dictionary mapping property names to their expanded type URIs
         """
         type_map: Dict[str, Optional[str]] = {}
         
-        if isinstance(context, dict):
-            for key, value in context.items():
-                if key in ("@vocab", "@base", "@language"):
-                    continue
-                if isinstance(value, dict) and "@type" in value:
-                    type_map[key] = value["@type"]
-                elif isinstance(value, str):
-                    # Simple string mapping, no type info
-                    type_map[key] = None
-        elif isinstance(context, list):
-            # Process each context in the array
-            for ctx in context:
-                type_map.update(self._parse_context(ctx))
+        if not context:
+            return type_map
+        
+        try:
+            # Ensure context is a dict we can work with
+            working_context = context
+            
+            # If it's a dict, check if we need to add common prefixes
+            if isinstance(context, dict):
+                # Check if xsd prefix is used but not defined
+                needs_xsd = False
+                for key, value in context.items():
+                    if isinstance(value, dict) and "@type" in value:
+                        type_val = value["@type"]
+                        if isinstance(type_val, str) and type_val.startswith("xsd:"):
+                            if "xsd" not in context:
+                                needs_xsd = True
+                                break
+                
+                # Add xsd prefix if needed
+                if needs_xsd:
+                    working_context = copy.deepcopy(context)
+                    working_context["xsd"] = "http://www.w3.org/2001/XMLSchema#"
+            
+            # Process the context
+            if isinstance(working_context, dict):
+                for key, value in working_context.items():
+                    if key in ("@vocab", "@base", "@language", "@version", "xsd", "rdf", "rdfs"):
+                        continue
+                    
+                    # Check if this property has type coercion defined
+                    if isinstance(value, dict) and "@type" in value:
+                        # Create a test document with this property
+                        prop_doc = {
+                            "@context": working_context,
+                            key: "test_value"
+                        }
+                        
+                        try:
+                            # Expand to get the full URI for the type
+                            expanded = jsonld.expand(prop_doc)
+                            if expanded and len(expanded) > 0:
+                                # Find the property in the expanded document
+                                for prop_uri, prop_values in expanded[0].items():
+                                    if prop_uri.startswith("@"):
+                                        continue
+                                    # Check if the value has type information
+                                    if prop_values and isinstance(prop_values, list) and len(prop_values) > 0:
+                                        if isinstance(prop_values[0], dict) and "@type" in prop_values[0]:
+                                            # Store the expanded type URI
+                                            type_map[key] = prop_values[0]["@type"]
+                        except Exception:
+                            # If expansion fails, fall back to storing None
+                            type_map[key] = None
+                    elif isinstance(value, str):
+                        # Simple string mapping, no type info
+                        type_map[key] = None
+            elif isinstance(working_context, list):
+                # Process each context in the array
+                for ctx in working_context:
+                    type_map.update(self._parse_context(ctx))
+        except Exception:
+            # If context processing fails, return empty type map
+            pass
         
         return type_map
     
