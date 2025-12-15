@@ -19,10 +19,10 @@ from .converter import frame_to_schema
 def main(argv: Optional[list] = None) -> int:
     """
     Main CLI entry point.
-    
+
     Args:
         argv: Command-line arguments (default: sys.argv)
-        
+
     Returns:
         Exit code (0 for success, 1 for error)
     """
@@ -39,72 +39,63 @@ Examples:
   
   # Read from stdin and write to stdout
   cat frame.json | %(prog)s
-        """
+        """,
     )
-    
+
     parser.add_argument(
-        "input",
-        nargs="?",
-        help="Input JSON-LD Frame file (default: stdin)"
+        "input", nargs="?", help="Input JSON-LD Frame file (default: stdin)"
     )
-    
+
     parser.add_argument(
-        "output",
-        nargs="?",
-        help="Output JSON Schema file (default: stdout)"
+        "output", nargs="?", help="Output JSON Schema file (default: stdout)"
     )
-    
+
     parser.add_argument(
         "--schema-version",
         default="https://json-schema.org/draft/2020-12/schema",
-        help="JSON Schema version URI (default: draft 2020-12)"
+        help="JSON Schema version URI (default: draft 2020-12)",
     )
-    
+
     parser.add_argument(
-        "--indent",
-        type=int,
-        default=2,
-        help="JSON indentation (default: 2)"
+        "--indent", type=int, default=2, help="JSON indentation (default: 2)"
     )
-    
+
     parser.add_argument(
-        "--compact",
-        action="store_true",
-        help="Output compact JSON (no indentation)"
+        "--compact", action="store_true", help="Output compact JSON (no indentation)"
     )
-    
+
     args = parser.parse_args(argv)
-    
+
     # Determine output file
     output_file = args.output
-    
+
     try:
         # Read input frame
         if args.input:
-            with open(args.input, 'r') as f:
+            with open(args.input, "r") as f:
                 frame = json.load(f)
         else:
             # Read from stdin
             frame = json.load(sys.stdin)
-        
+
         # Convert to schema
         schema = frame_to_schema(frame, schema_version=args.schema_version)
-        
+
         # Format output
         indent = None if args.compact else args.indent
         schema_json = json.dumps(schema, indent=indent)
-        
+
         # Write output
         if output_file:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 f.write(schema_json)
-                f.write('\n')
+                f.write("\n")
             print(f"Schema written to {output_file}", file=sys.stderr)
         else:
             print(schema_json)
-        
+
         return 0
-        
+
     except FileNotFoundError as e:
         print(f"Error: File not found: {e.filename}", file=sys.stderr)
         return 1
