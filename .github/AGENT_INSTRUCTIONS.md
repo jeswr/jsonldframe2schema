@@ -892,12 +892,50 @@ Required:
 1. **Unit tests** (`tests/test_converter.py`): Test individual mapping rules
 2. **Integration tests** (`tests/test_w3c_integration.py`): Test against W3C frames
 3. **Test cases** (`tests/test_cases/`): Pairs of `.jsonld` frames and `.json` expected schemas
+4. **Framing validation tests** (`tests/test_framing_validation.py`): End-to-end validation using W3C test suite
+
+#### 4.4.1 Framing Validation Tests (End-to-End)
+
+The `test_framing_validation.py` file provides comprehensive end-to-end testing that:
+
+1. **Downloads** W3C JSON-LD framing test suite data
+2. **Frames** input documents using pyld's framing algorithm
+3. **Generates** JSON Schema from the frame using our converter
+4. **Validates** that framed output conforms to the generated schema
+
+This is the gold standard for testing because it validates the entire pipeline: frame → schema → validation.
+
+**Current pass rate: ~62% of W3C positive tests**
+
+The remaining failures are due to:
+- Complex patterns (`oneOf`, `@container`, `@embed: false`)
+- pyld framing errors (not our fault)
+- Advanced features not yet implemented
+
+**To run the validation tests:**
+```bash
+pytest tests/test_framing_validation.py -v
+```
+
+**To see detailed results:**
+```bash
+pytest tests/test_framing_validation.py::TestFramingSchemaConformance::test_all_positive_tests_validate -v -s
+```
+
+#### 4.4.2 W3C Test Suite Location
+
+The W3C framing test suite is downloaded to:
+- `tests/jsonld_test_suite/frame/` - Frame files
+- `tests/jsonld_test_suite/frame-manifest.jsonld` - Test manifest
+
+Input and output files are automatically downloaded on first run.
 
 When adding features:
 1. Add test case in `tests/test_cases/` with frame and expected schema
 2. Add unit test in `tests/test_converter.py`
 3. Implement feature
 4. Verify W3C test suite doesn't regress
+5. Check if W3C validation pass rate improves
 
 **IMPORTANT: Always include `@context` in test cases!**
 
