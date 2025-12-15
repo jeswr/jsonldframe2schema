@@ -146,6 +146,54 @@ schema = frame_to_schema(frame)
 # author will accept either a URI string or object with @id
 ```
 
+## Command-Line Interface
+
+The library includes a CLI tool for converting frames to schemas from the command line.
+
+### Basic Usage
+
+```bash
+# Convert frame from file and print to stdout
+python -m jsonldframe2schema frame.json
+
+# Convert frame and save to file
+python -m jsonldframe2schema frame.json schema.json
+
+# Read from stdin and write to stdout
+cat frame.json | python -m jsonldframe2schema
+
+# Read from stdin and save to file
+cat frame.json | python -m jsonldframe2schema -o schema.json
+```
+
+### CLI Options
+
+```bash
+python -m jsonldframe2schema --help
+
+Options:
+  -h, --help            Show help message
+  -o OUTPUT, --output OUTPUT
+                        Output file (alternative to positional argument)
+  --schema-version SCHEMA_VERSION
+                        JSON Schema version URI (default: draft 2020-12)
+  --indent INDENT       JSON indentation (default: 2)
+  --compact             Output compact JSON (no indentation)
+```
+
+### CLI Examples
+
+```bash
+# Use specific JSON Schema version
+python -m jsonldframe2schema frame.json --schema-version https://json-schema.org/draft-07/schema
+
+# Output compact JSON
+python -m jsonldframe2schema frame.json --compact
+
+# Custom indentation
+python -m jsonldframe2schema frame.json --indent 4
+```
+
 ## API Reference
 
 ### `frame_to_schema(frame, schema_version)`

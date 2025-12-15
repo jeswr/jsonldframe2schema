@@ -9,5 +9,6 @@ __version__ = "0.1.0"
 __author__ = "Jesse Wright"
 
 from .converter import FrameToSchemaConverter, frame_to_schema
+from .cli import main as cli_main
 
-__all__ = ["FrameToSchemaConverter", "frame_to_schema"]
+__all__ = ["FrameToSchemaConverter", "frame_to_schema", "cli_main"]
