@@ -12,7 +12,7 @@ describe the structure of framed JSON-LD documents.
 DESIGN NOTE: Schema Augmentation vs Converter Changes
 =====================================================
 The converter generates PRECISE schemas based on the frame structure.
-The test validation functions (augment_schema_for_jsonld, allow_null_in_schema)
+The test validation functions (augment_schema_for_jsonld, make_permissive)
 make schemas PERMISSIVE to handle JSON-LD output variations.
 
 This separation is intentional:
@@ -35,7 +35,6 @@ Known pyld limitations (these tests are xfail):
 """
 
 import json
-import sys
 import unittest
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple, Set
@@ -45,10 +44,8 @@ import pytest
 from pyld import jsonld
 from jsonschema import validate, ValidationError, Draft202012Validator
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from jsonldframe2schema import frame_to_schema
+from tests.conftest import load_json_file
 from tests.download_test_suite import (
     get_test_suite_dir,
     is_test_suite_downloaded,
@@ -140,12 +137,23 @@ def download_missing_files():
     return downloaded
 
 
-def load_jsonld_file(path: Path) -> Optional[Dict[str, Any]]:
-    """Load a JSON-LD file."""
-    if not path.exists():
-        return None
-    with open(path, "r") as f:
-        return json.load(f)
+def ensure_test_suite_ready() -> Path:
+    """
+    Ensure the W3C test suite is downloaded and ready.
+    
+    Returns:
+        Path to the test suite directory
+        
+    Raises:
+        pytest.skip if test suite is not available
+    """
+    if not is_test_suite_downloaded():
+        pytest.skip("W3C test suite not downloaded")
+    
+    # Download any missing files
+    download_missing_files()
+    
+    return get_test_suite_dir()
 
 
 def frame_document(input_doc: Dict[str, Any], frame: Dict[str, Any], 
@@ -410,15 +418,7 @@ class TestFramingValidation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test fixtures."""
-        if not is_test_suite_downloaded():
-            pytest.skip("W3C test suite not downloaded")
-        
-        # Download any missing files
-        downloaded = download_missing_files()
-        if downloaded > 0:
-            print(f"Downloaded {downloaded} missing test files")
-        
-        cls.test_suite_dir = get_test_suite_dir()
+        cls.test_suite_dir = ensure_test_suite_ready()
         cls.tests = load_manifest_tests()
         
         # Filter to only positive evaluation tests with all files
@@ -433,11 +433,11 @@ class TestFramingValidation(unittest.TestCase):
         expected = None
         
         if test.input_path:
-            input_doc = load_jsonld_file(self.test_suite_dir / test.input_path)
+            input_doc = load_json_file(self.test_suite_dir / test.input_path)
         if test.frame_path:
-            frame = load_jsonld_file(self.test_suite_dir / test.frame_path)
+            frame = load_json_file(self.test_suite_dir / test.frame_path)
         if test.expect_path:
-            expected = load_jsonld_file(self.test_suite_dir / test.expect_path)
+            expected = load_json_file(self.test_suite_dir / test.expect_path)
         
         return input_doc, frame, expected
 
@@ -496,13 +496,7 @@ class TestFramingSchemaConformance(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test fixtures."""
-        if not is_test_suite_downloaded():
-            pytest.skip("W3C test suite not downloaded")
-        
-        # Download any missing files
-        download_missing_files()
-        
-        cls.test_suite_dir = get_test_suite_dir()
+        cls.test_suite_dir = ensure_test_suite_ready()
         cls.tests = load_manifest_tests()
     
     def test_all_positive_tests_validate(self):
@@ -534,8 +528,8 @@ class TestFramingSchemaConformance(unittest.TestCase):
                 results["skipped"].append((test.test_id, "Files not found"))
                 continue
             
-            input_doc = load_jsonld_file(input_path)
-            frame = load_jsonld_file(frame_path)
+            input_doc = load_json_file(input_path)
+            frame = load_json_file(frame_path)
             
             # Note: Use 'is None' because {} is a valid empty frame
             if input_doc is None or frame is None:
@@ -615,8 +609,8 @@ class TestFramingSchemaConformance(unittest.TestCase):
                 results["skipped"].append(test.test_id)
                 continue
             
-            frame = load_jsonld_file(frame_path)
-            expected = load_jsonld_file(expect_path)
+            frame = load_json_file(frame_path)
+            expected = load_json_file(expect_path)
             
             # Note: Use 'is None' because {} is a valid empty frame
             if frame is None or expected is None:
@@ -653,11 +647,7 @@ class TestSpecificFramingCases(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test fixtures."""
-        if not is_test_suite_downloaded():
-            pytest.skip("W3C test suite not downloaded")
-        
-        download_missing_files()
-        cls.test_suite_dir = get_test_suite_dir()
+        cls.test_suite_dir = ensure_test_suite_ready()
     
     def run_validation_test(self, test_num: str):
         """Helper to run validation for a specific test number."""
@@ -668,8 +658,8 @@ class TestSpecificFramingCases(unittest.TestCase):
         if not all(p.exists() for p in [frame_path, input_path]):
             self.skipTest(f"Test files not found for {test_num}")
         
-        frame = load_jsonld_file(frame_path)
-        input_doc = load_jsonld_file(input_path)
+        frame = load_json_file(frame_path)
+        input_doc = load_json_file(input_path)
         
         # Generate schema
         schema = frame_to_schema(frame)
@@ -688,7 +678,7 @@ class TestSpecificFramingCases(unittest.TestCase):
         
         # Also validate expected output if available
         if expect_path.exists():
-            expected = load_jsonld_file(expect_path)
+            expected = load_json_file(expect_path)
             is_valid_exp, error_exp = validate_against_schema(expected, schema)
             if not is_valid_exp:
                 self.fail(f"Expected output validation failed: {error_exp}")
@@ -788,8 +778,8 @@ def test_w3c_framing_validation(test_case: FramingTestCase):
     input_path = test_suite_dir / test_case.input_path
     frame_path = test_suite_dir / test_case.frame_path
     
-    input_doc = load_jsonld_file(input_path)
-    frame = load_jsonld_file(frame_path)
+    input_doc = load_json_file(input_path)
+    frame = load_json_file(frame_path)
     
     # Note: Use 'is None' instead of 'not' because {} is a valid empty frame
     if input_doc is None or frame is None:

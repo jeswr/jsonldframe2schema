@@ -13,15 +13,12 @@ from the W3C test suite because:
 """
 
 import json
-import sys
 import unittest
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from jsonldframe2schema import frame_to_schema
+from tests.conftest import load_json_file
 from tests.download_test_suite import (
     download_test_suite,
     get_test_suite_dir,
@@ -50,15 +47,6 @@ class TestW3CFrameFiles(unittest.TestCase):
         cls.test_summary = load_test_summary()
         cls.test_suite_dir = get_test_suite_dir()
 
-    def load_frame_file(self, frame_path: str) -> Optional[Dict[str, Any]]:
-        """Load a frame file from the test suite."""
-        full_path = self.test_suite_dir / frame_path
-        if not full_path.exists():
-            return None
-
-        with open(full_path, "r") as f:
-            return json.load(f)
-
     def test_all_frame_files_parse(self):
         """Test that all frame files from W3C suite can be parsed and converted."""
         if not self.test_summary:
@@ -77,7 +65,7 @@ class TestW3CFrameFiles(unittest.TestCase):
                 continue
 
             try:
-                frame = self.load_frame_file(frame_path)
+                frame = load_json_file(self.test_suite_dir / frame_path)
                 if frame is None:
                     skipped.append(test_id)
                     continue
@@ -120,7 +108,7 @@ class TestW3CFrameFiles(unittest.TestCase):
 
     def test_specific_frame_t0001(self):
         """Test the library framing example (t0001)."""
-        frame = self.load_frame_file("frame/0001-frame.jsonld")
+        frame = load_json_file(self.test_suite_dir / "frame/0001-frame.jsonld")
         if frame is None:
             self.skipTest("Frame file not available")
 
@@ -132,7 +120,7 @@ class TestW3CFrameFiles(unittest.TestCase):
 
     def test_specific_frame_t0005_explicit(self):
         """Test the explicit frame example (t0005)."""
-        frame = self.load_frame_file("frame/0005-frame.jsonld")
+        frame = load_json_file(self.test_suite_dir / "frame/0005-frame.jsonld")
         if frame is None:
             self.skipTest("Frame file not available")
 
@@ -147,7 +135,7 @@ class TestW3CFrameFiles(unittest.TestCase):
 
     def test_specific_frame_t0011_embed(self):
         """Test the @embed frame example (t0011)."""
-        frame = self.load_frame_file("frame/0011-frame.jsonld")
+        frame = load_json_file(self.test_suite_dir / "frame/0011-frame.jsonld")
         if frame is None:
             self.skipTest("Frame file not available")
 
@@ -158,7 +146,7 @@ class TestW3CFrameFiles(unittest.TestCase):
 
     def test_specific_frame_t0022_id_match(self):
         """Test the @id match frame example (t0022)."""
-        frame = self.load_frame_file("frame/0022-frame.jsonld")
+        frame = load_json_file(self.test_suite_dir / "frame/0022-frame.jsonld")
         if frame is None:
             self.skipTest("Frame file not available")
 

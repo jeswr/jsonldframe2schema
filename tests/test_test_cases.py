@@ -8,16 +8,11 @@ pairs in the test_cases directory. Each pair consists of:
 """
 
 import json
-import os
 from pathlib import Path
 import pytest
-from deepdiff import DeepDiff
 
 from jsonldframe2schema import frame_to_schema
-
-
-# Get the path to test_cases directory
-TEST_CASES_DIR = Path(__file__).parent / "test_cases"
+from tests.conftest import TEST_CASES_DIR, compare_schemas
 
 
 def discover_test_cases():
@@ -61,10 +56,9 @@ def test_frame_to_schema_conversion(test_name, frame_file, schema_file):
     # Convert the frame
     actual_schema = frame_to_schema(frame)
 
-    # Compare
-    diff = DeepDiff(expected_schema, actual_schema, ignore_order=True)
-
-    assert not diff, f"Schema mismatch for {test_name}:\n{diff}"
+    # Compare using shared utility
+    is_match, error_msg = compare_schemas(actual_schema, expected_schema, test_name)
+    assert is_match, error_msg
 
 
 class TestCaseDiscovery:

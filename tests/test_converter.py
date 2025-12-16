@@ -16,17 +16,13 @@ Usage:
 
 import json
 import sys
-import os
 import unittest
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from deepdiff import DeepDiff  # For detailed comparison
-
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+from typing import Dict, Any
 
 from jsonldframe2schema import frame_to_schema, FrameToSchemaConverter
 from tests.expected_schemas import get_all_test_cases, get_test_case_by_id
+from tests.conftest import compare_schemas
 
 
 class TestFrameToSchemaMapping(unittest.TestCase):
@@ -36,139 +32,108 @@ class TestFrameToSchemaMapping(unittest.TestCase):
         """Set up test fixtures."""
         self.converter = FrameToSchemaConverter()
 
-    def compare_schemas(self, actual: Dict, expected: Dict, test_id: str) -> None:
+    def assert_schema_matches(self, actual: Dict, expected: Dict, test_id: str) -> None:
         """
-        Compare actual and expected schemas with detailed error reporting.
+        Assert that actual and expected schemas match.
 
         Args:
             actual: The actual generated schema
             expected: The expected schema
             test_id: Test identifier for error messages
         """
-        diff = DeepDiff(expected, actual, ignore_order=True)
-
-        if diff:
-            # Build a detailed error message
-            msg_parts = [f"\n\nSchema mismatch for test '{test_id}':"]
-
-            if "values_changed" in diff:
-                msg_parts.append("\nValues changed:")
-                for path, change in diff["values_changed"].items():
-                    msg_parts.append(
-                        f"  {path}: {change['old_value']} -> {change['new_value']}"
-                    )
-
-            if "dictionary_item_added" in diff:
-                msg_parts.append("\nExtra items in actual:")
-                for item in diff["dictionary_item_added"]:
-                    msg_parts.append(f"  {item}")
-
-            if "dictionary_item_removed" in diff:
-                msg_parts.append("\nMissing items from actual:")
-                for item in diff["dictionary_item_removed"]:
-                    msg_parts.append(f"  {item}")
-
-            if "type_changes" in diff:
-                msg_parts.append("\nType changes:")
-                for path, change in diff["type_changes"].items():
-                    msg_parts.append(
-                        f"  {path}: {type(change['old_value']).__name__} -> {type(change['new_value']).__name__}"
-                    )
-
-            msg_parts.append(f"\n\nExpected schema:\n{json.dumps(expected, indent=2)}")
-            msg_parts.append(f"\nActual schema:\n{json.dumps(actual, indent=2)}")
-
-            self.fail("\n".join(msg_parts))
+        is_match, error_msg = compare_schemas(actual, expected, test_id)
+        if not is_match:
+            self.fail(error_msg)
 
     def test_basic_person_frame(self):
         """Test basic person frame with nested object."""
         tc = get_test_case_by_id("basic_person")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_explicit_frame(self):
         """Test @explicit: true disallows additional properties."""
         tc = get_test_case_by_id("explicit_frame")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_non_explicit_frame(self):
         """Test default behavior allows additional properties."""
         tc = get_test_case_by_id("non_explicit_frame")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_multiple_types(self):
         """Test multiple types in @type become enum."""
         tc = get_test_case_by_id("multiple_types")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_wildcard_type(self):
         """Test empty object for @type allows any type."""
         tc = get_test_case_by_id("wildcard_type")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_id_match(self):
         """Test specific @id value becomes const."""
         tc = get_test_case_by_id("id_match")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_wildcard_id(self):
         """Test empty object for @id requires URI format."""
         tc = get_test_case_by_id("wildcard_id")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_require_all(self):
         """Test @requireAll: true makes all properties required."""
         tc = get_test_case_by_id("require_all")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_embed_false(self):
         """Test @embed: false creates ID reference schema."""
         tc = get_test_case_by_id("embed_false")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_array_frame(self):
         """Test array in frame becomes array schema."""
         tc = get_test_case_by_id("array_frame")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_typed_properties(self):
         """Test type coercion from @context maps to JSON Schema types."""
         tc = get_test_case_by_id("typed_properties")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_empty_frame(self):
         """Test empty frame produces minimal schema."""
         tc = get_test_case_by_id("empty_frame")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_match_none_type(self):
         """Test empty array for @type acts as wildcard."""
         tc = get_test_case_by_id("match_none_type")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_nested_explicit(self):
         """Test @explicit propagates to nested objects."""
         tc = get_test_case_by_id("nested_explicit")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
     def test_id_coercion(self):
         """Test @type: @id in context maps to URI format."""
         tc = get_test_case_by_id("id_coercion")
         actual = frame_to_schema(tc["frame"])
-        self.compare_schemas(actual, tc["expected_schema"], tc["id"])
+        self.assert_schema_matches(actual, tc["expected_schema"], tc["id"])
 
 
 class TestSchemaValidity(unittest.TestCase):
@@ -347,10 +312,10 @@ class TestAllPredefinedCases(unittest.TestCase):
         for tc in test_cases:
             try:
                 actual = frame_to_schema(tc["frame"])
-                diff = DeepDiff(tc["expected_schema"], actual, ignore_order=True)
+                is_match, error_msg = compare_schemas(actual, tc["expected_schema"], tc["id"])
 
-                if diff:
-                    failures.append({"id": tc["id"], "name": tc["name"], "diff": diff})
+                if not is_match:
+                    failures.append({"id": tc["id"], "name": tc["name"], "error": "Schema mismatch"})
             except Exception as e:
                 failures.append({"id": tc["id"], "name": tc["name"], "error": str(e)})
 
