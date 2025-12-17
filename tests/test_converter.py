@@ -316,16 +316,14 @@ class TestNewFeatures(unittest.TestCase):
             "@context": {"@vocab": "http://schema.org/"},
             "@type": "Person",
             "name": {},
-            "@reverse": {
-                "author": {"@type": "Book", "title": {}}
-            },
+            "@reverse": {"author": {"@type": "Book", "title": {}}},
         }
         schema = frame_to_schema(frame, graph_only=True)
 
         # @reverse should NOT be in the schema properties
         # It's a framing keyword for querying, not an output property
         self.assertNotIn("@reverse", schema["properties"])
-        
+
         # The frame should still generate a valid schema
         self.assertIn("@type", schema["properties"])
         self.assertIn("name", schema["properties"])

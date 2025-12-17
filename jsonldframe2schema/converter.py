@@ -430,8 +430,8 @@ class FrameToSchemaConverter:
         # Check if this is a container specification
         if context_type.startswith(self.CONTAINER_PREFIX):
             # Extract container type using structured approach
-            container_type = context_type[len(self.CONTAINER_PREFIX):]
-            
+            container_type = context_type[len(self.CONTAINER_PREFIX) :]
+
             if container_type == "@language":
                 # Language map: allows string or object with language codes as keys
                 # BCP 47 language tags: language[-script][-region][-variant][-extension][-privateuse]
@@ -443,7 +443,9 @@ class FrameToSchemaConverter:
                             "type": "object",
                             "patternProperties": {
                                 # Matches: en, en-US, zh-Hans-CN, etc.
-                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?(-[a-z0-9]+)*$": {"type": "string"}
+                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?(-[a-z0-9]+)*$": {
+                                    "type": "string"
+                                }
                             },
                             "additionalProperties": False,
                         },
