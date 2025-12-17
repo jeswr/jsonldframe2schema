@@ -34,6 +34,7 @@ EXPECTED_SCHEMAS_DIR = TESTS_DIR / "expected_schemas"
 # Pytest Configuration
 # =============================================================================
 
+
 def pytest_configure(config):
     """Configure pytest markers."""
     config.addinivalue_line(
@@ -46,13 +47,14 @@ def pytest_configure(config):
 # Shared Utilities
 # =============================================================================
 
+
 def load_json_file(path: Path) -> Optional[Dict[str, Any]]:
     """
     Load a JSON or JSON-LD file.
-    
+
     Args:
         path: Path to the JSON file
-        
+
     Returns:
         Parsed JSON content, or None if file doesn't exist
     """
@@ -63,26 +65,24 @@ def load_json_file(path: Path) -> Optional[Dict[str, Any]]:
 
 
 def compare_schemas(
-    actual: Dict[str, Any],
-    expected: Dict[str, Any],
-    test_id: str = "unknown"
+    actual: Dict[str, Any], expected: Dict[str, Any], test_id: str = "unknown"
 ) -> Tuple[bool, Optional[str]]:
     """
     Compare actual and expected schemas with detailed error reporting.
-    
+
     Args:
         actual: The actual generated schema
         expected: The expected schema
         test_id: Test identifier for error messages
-        
+
     Returns:
         Tuple of (is_match, error_message). error_message is None if match.
     """
     diff = DeepDiff(expected, actual, ignore_order=True)
-    
+
     if not diff:
         return True, None
-    
+
     # Build a detailed error message
     msg_parts = [f"\n\nSchema mismatch for test '{test_id}':"]
 
@@ -119,6 +119,7 @@ def compare_schemas(
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def test_cases_dir():

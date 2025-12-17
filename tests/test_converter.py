@@ -320,10 +320,14 @@ class TestAllPredefinedCases(unittest.TestCase):
         for tc in test_cases:
             try:
                 actual = frame_to_schema(tc["frame"])
-                is_match, error_msg = compare_schemas(actual, tc["expected_schema"], tc["id"])
+                is_match, error_msg = compare_schemas(
+                    actual, tc["expected_schema"], tc["id"]
+                )
 
                 if not is_match:
-                    failures.append({"id": tc["id"], "name": tc["name"], "error": "Schema mismatch"})
+                    failures.append(
+                        {"id": tc["id"], "name": tc["name"], "error": "Schema mismatch"}
+                    )
             except Exception as e:
                 failures.append({"id": tc["id"], "name": tc["name"], "error": str(e)})
 
