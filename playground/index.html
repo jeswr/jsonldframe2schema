@@ -347,6 +347,8 @@
                 setStatus('Loading converter module...', 'loading');
                 
                 // Load the converter module directly
+                // NOTE: This embeds the FrameToSchemaConverter class from jsonldframe2schema/converter.py
+                // MAINTENANCE: When updating the main library, keep this embedded code in sync
                 await pyodide.runPythonAsync(`
 import json
 from typing import Any, Dict, List, Optional, Union
@@ -614,6 +616,9 @@ class FrameToSchemaConverter:
             return "null"
         return "string"
 
+# NOTE: The default is graph_only=True (different from the main library's default of False)
+# This provides simpler output for the playground UX by showing just the object schema
+# rather than wrapping it in @context and @graph properties.
 def frame_to_schema(frame, schema_version="https://json-schema.org/draft/2020-12/schema", graph_only=True):
     converter = FrameToSchemaConverter(schema_version=schema_version, graph_only=graph_only)
     return converter.convert(frame)
@@ -623,8 +628,10 @@ def convert_frame_to_schema(frame_json):
         frame = json.loads(frame_json)
         schema = frame_to_schema(frame)
         return json.dumps(schema, indent=2)
+    except json.JSONDecodeError as e:
+        return json.dumps({"error": f"Invalid JSON: {str(e)}"})
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        return json.dumps({"error": f"{type(e).__name__}: {str(e)}"})
 `);
                 
                 setStatus('Ready', 'ready');
