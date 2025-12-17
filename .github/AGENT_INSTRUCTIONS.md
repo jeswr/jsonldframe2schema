@@ -1210,3 +1210,91 @@ Before finalizing any task:
 - [ ] Run `mypy` and fix all type errors
 - [ ] Verify no linting errors remain
 - [ ] Commit all changes including linting fixes
+
+---
+
+## Appendix D: Documentation Updates
+
+**CRITICAL**: Whenever there are code changes that affect the algorithm, behavior, or functionality of the library, agents MUST update the corresponding documentation files.
+
+### D.1 Documentation Files That Must Be Updated
+
+#### D.1.1 ALGORITHM.md
+
+The `ALGORITHM.md` file in the repository root contains the formal algorithm definition for converting JSON-LD frames to JSON Schema.
+
+**When to update**:
+- When adding new features or capabilities to the converter
+- When changing how existing features work
+- When fixing bugs that affect the algorithm behavior
+- When adding support for new JSON-LD framing keywords
+- When modifying the type mapping or schema generation logic
+
+**What to update**:
+- Update the algorithm steps to reflect new or changed behavior
+- Add new sections for new features
+- Update examples to demonstrate the changes
+- Ensure the pseudocode accurately represents the implementation
+- Update the complexity analysis if performance characteristics change
+
+**Example scenarios**:
+- If you add support for `@reverse` properties, update the algorithm to include steps for processing reverse properties
+- If you change how `@embed` flags are handled, update the corresponding algorithm sections
+- If you add new type mappings, update the type mapping tables
+
+#### D.1.2 ReSpec Specification Document (spec/index.html)
+
+The `spec/index.html` file is a formal specification document written using the W3C ReSpec format. It provides the authoritative technical specification for the conversion algorithm.
+
+**When to update**:
+- When adding new features or capabilities to the converter
+- When changing how existing features work
+- When fixing bugs that affect the specification
+- When adding support for new JSON-LD framing keywords
+- When the algorithm behavior changes in any way
+
+**What to update**:
+- Update the algorithm definition sections to reflect changes
+- Add new sections for new features or capabilities
+- Update examples to demonstrate the changes
+- Ensure all algorithm steps are accurately documented
+- Update any references or citations if needed
+- Maintain consistency with ALGORITHM.md
+
+**Important notes about ReSpec**:
+- The spec uses ReSpec, a W3C tool for creating specifications
+- Maintain the existing HTML structure and ReSpec classes
+- Keep the technical writing style consistent (formal, precise)
+- Ensure examples are complete and valid JSON-LD/JSON Schema
+- Test that the spec still renders correctly after changes
+
+### D.2 Documentation Update Workflow
+
+When making code changes that affect functionality:
+
+1. **Make code changes first**: Implement and test your code changes
+2. **Update ALGORITHM.md**: Reflect the changes in the algorithm documentation
+3. **Update spec/index.html**: Update the formal specification to match
+4. **Ensure consistency**: Verify that both documentation files are consistent with each other and with the code
+5. **Review examples**: Ensure all examples in both files are accurate and working
+6. **Commit together**: Commit code changes and documentation updates together
+
+### D.3 Documentation Quality Standards
+
+All documentation updates must:
+- Be technically accurate and match the implementation
+- Use clear, precise language
+- Include examples where appropriate
+- Maintain consistency with existing documentation style
+- Be comprehensive (don't leave gaps or incomplete sections)
+
+### D.4 Documentation Review Checklist
+
+Before finalizing any task with code changes:
+- [ ] Check if code changes affect the algorithm or behavior
+- [ ] Update ALGORITHM.md if changes affect the conversion process
+- [ ] Update spec/index.html if changes affect the specification
+- [ ] Verify consistency between code, ALGORITHM.md, and spec/index.html
+- [ ] Test that all examples in documentation still work
+- [ ] Ensure documentation is complete and accurate
+- [ ] Commit documentation updates with code changes
