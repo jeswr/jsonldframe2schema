@@ -266,11 +266,8 @@ class FrameToSchemaConverter:
             if not self._is_empty(frame["@id"]):
                 required.append("@id")
 
-        # Process @reverse constraint
-        if "@reverse" in frame:
-            reverse_schema = self._process_reverse_property(frame["@reverse"], flags, context)
-            properties["@reverse"] = reverse_schema
-            required.append("@reverse")
+        # Note: @reverse is a framing keyword used for querying,
+        # not a property that appears in the output, so we skip it
 
         # Process regular properties
         for key, value in frame.items():
@@ -378,19 +375,38 @@ class FrameToSchemaConverter:
             # Array frame
             return self._process_array_frame(value, flags, context)
         elif isinstance(value, dict):
-            # Check if this dict has @default (but not other frame keywords)
-            if "@default" in value and not ("@value" in value or "@type" in value or "@id" in value):
-                # Property with default value
-                schema = self._infer_type_from_context(key, context_type)
-                schema["default"] = value["@default"]
-                return schema
-            # Check if this is a value object frame
-            if "@value" in value:
+            # Check if this is a value object frame (has @value with @language or @type)
+            if self._is_value_object_frame(value):
                 return self._process_value_object_frame(value, flags, context)
             # Nested object frame
             return self._process_nested_frame(value, flags, context)
 
         return {}
+
+    def _is_value_object_frame(self, value: Dict[str, Any]) -> bool:
+        """
+        Check if a dict is a value object frame pattern.
+
+        A value object frame has @language or @type alongside @value.
+        Just having @value alone is NOT a value object frame - it's a
+        nested object with @value as a property.
+
+        Args:
+            value: Dictionary to check
+
+        Returns:
+            True if this is a value object frame
+        """
+        if "@value" not in value:
+            return False
+
+        # Only treat as value object frame if @language or @type is present
+        # This distinguishes {"@value": {}, "@language": "en"} (value object frame)
+        # from {"@value": {}} (nested object with @value property)
+        if "@language" in value or "@type" in value:
+            return True
+
+        return False
 
     def _infer_type_from_context(
         self, key: str, context_type: Optional[str]

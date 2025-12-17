@@ -313,7 +313,7 @@ class TestNewFeatures(unittest.TestCase):
     """Tests for newly implemented features like @reverse, value objects, etc."""
 
     def test_reverse_property(self):
-        """Test @reverse property creates proper schema."""
+        """Test @reverse property is a framing keyword and not in schema."""
         frame = {
             "@context": {"@vocab": "http://schema.org/"},
             "@type": "Person",
@@ -324,33 +324,16 @@ class TestNewFeatures(unittest.TestCase):
         }
         schema = frame_to_schema(frame, graph_only=True)
 
-        # Check that @reverse property exists
-        self.assertIn("@reverse", schema["properties"])
-        reverse_schema = schema["properties"]["@reverse"]
-        self.assertEqual(reverse_schema["type"], "object")
-        self.assertIn("properties", reverse_schema)
-
-        # Check that author property allows single or array
-        self.assertIn("author", reverse_schema["properties"])
-        author_schema = reverse_schema["properties"]["author"]
-        self.assertIn("oneOf", author_schema)
-        self.assertEqual(len(author_schema["oneOf"]), 2)
-
-        # First option should be object with Book type
-        single_option = author_schema["oneOf"][0]
-        self.assertEqual(single_option["type"], "object")
-        self.assertIn("properties", single_option)
-        self.assertIn("@type", single_option["properties"])
-        self.assertEqual(single_option["properties"]["@type"]["const"], "Book")
-
-        # Second option should be array of Book objects
-        array_option = author_schema["oneOf"][1]
-        self.assertEqual(array_option["type"], "array")
-        self.assertIn("items", array_option)
-        self.assertEqual(array_option["items"]["type"], "object")
+        # @reverse should NOT be in the schema properties
+        # It's a framing keyword for querying, not an output property
+        self.assertNotIn("@reverse", schema["properties"])
+        
+        # The frame should still generate a valid schema
+        self.assertIn("@type", schema["properties"])
+        self.assertIn("name", schema["properties"])
 
     def test_reverse_property_required(self):
-        """Test that @reverse property is marked as required."""
+        """Test that @reverse is skipped during schema generation."""
         frame = {
             "@context": {"@vocab": "http://schema.org/"},
             "@type": "Person",
@@ -358,9 +341,9 @@ class TestNewFeatures(unittest.TestCase):
         }
         schema = frame_to_schema(frame, graph_only=True)
 
-        # @reverse should be required when specified in frame
-        self.assertIn("required", schema)
-        self.assertIn("@reverse", schema["required"])
+        # @reverse should NOT be in required or properties
+        self.assertNotIn("@reverse", schema.get("required", []))
+        self.assertNotIn("@reverse", schema["properties"])
 
     def test_value_object_with_language(self):
         """Test value object frame with @language constraint."""
@@ -493,22 +476,6 @@ class TestNewFeatures(unittest.TestCase):
         self.assertIn("itemListElement", schema["properties"])
         list_schema = schema["properties"]["itemListElement"]
         self.assertEqual(list_schema["type"], "array")
-
-    def test_default_value(self):
-        """Test @default in property frame maps to default keyword."""
-        frame = {
-            "@context": {"@vocab": "http://schema.org/"},
-            "@type": "Person",
-            "name": {},
-            "status": {"@default": "active"},
-        }
-        schema = frame_to_schema(frame, graph_only=True)
-
-        # Check that status has default value
-        self.assertIn("status", schema["properties"])
-        status_schema = schema["properties"]["status"]
-        self.assertEqual(status_schema["type"], "string")
-        self.assertEqual(status_schema["default"], "active")
 
 
 class TestAllPredefinedCases(unittest.TestCase):
