@@ -16,27 +16,62 @@ The conversion process consists of several phases:
 
 ### Input
 - `frame`: A JSON-LD Frame object (as defined in JSON-LD 1.1 Framing specification)
+- `schemaVersion`: (optional) JSON Schema version URI (default: "https://json-schema.org/draft/2020-12/schema")
+- `graphOnly`: (optional) Boolean flag to output only the schema for @graph items (default: false)
 
 ### Output
-- `schema`: A JSON Schema document (Draft 7 or later)
+- `schema`: A JSON Schema document (Draft 2020-12 or later)
 
 ### Algorithm Steps
 
 ```
-function frameToSchema(frame):
-    schema = {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object"
-    }
+function frameToSchema(frame, schemaVersion = "https://json-schema.org/draft/2020-12/schema", graphOnly = false):
+    // Handle @graph wrapper if present
+    frameContent = frame
+    if "@graph" in frame:
+        graphValue = frame["@graph"]
+        if isArray(graphValue) and length(graphValue) > 0:
+            frameContent = graphValue[0]
+        else if isObject(graphValue):
+            frameContent = graphValue
+        
+        // Preserve context from outer frame if inner doesn't have one
+        if "@context" not in frameContent and "@context" in frame:
+            frameContent = { "@context": frame["@context"], ...frameContent }
+    
+    // Build the schema for graph items (the object schema)
+    graphItemSchema = { "type": "object" }
     
     // Extract global framing flags
-    flags = extractFramingFlags(frame)
+    flags = extractFramingFlags(frameContent)
     
     // Extract context for type information
-    context = extractContext(frame)
+    context = extractContext(frameContent)
     
     // Process the main frame object
-    processFrameObject(frame, schema, flags, context)
+    processFrameObject(frameContent, graphItemSchema, flags, context)
+    
+    // If graph_only mode, return just the item schema
+    if graphOnly:
+        return {
+            "$schema": schemaVersion,
+            ...graphItemSchema
+        }
+    
+    // Build the full document schema with @context and @graph
+    schema = {
+        "$schema": schemaVersion,
+        "type": "object",
+        "properties": {
+            "@context": {},
+            "@graph": {
+                "type": "array",
+                "items": graphItemSchema
+            }
+        },
+        "required": ["@context", "@graph"],
+        "additionalProperties": true
+    }
     
     return schema
 ```
@@ -377,7 +412,7 @@ function inferJsonType(value):
 5. Process "age": Uses context to create `"age": {"type": "integer"}` and adds to required
 6. Apply flags: Sets `additionalProperties: true`
 
-**Output Schema:**
+**Output Schema (with graphOnly=true):**
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -388,6 +423,32 @@ function inferJsonType(value):
     "age": {"type": "integer"}
   },
   "required": ["@type", "name", "age"],
+  "additionalProperties": true
+}
+```
+
+**Output Schema (default, graphOnly=false):**
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {"const": "Person"},
+          "name": {"type": "string"},
+          "age": {"type": "integer"}
+        },
+        "required": ["@type", "name", "age"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }
 ```
