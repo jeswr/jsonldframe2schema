@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "eventDates": {
+      "@id": "http://schema.org/eventDates",
+      "@container": "@set",
+      "@type": "http://www.w3.org/2001/XMLSchema#date"
+    }
+  },
+  "@type": "Event",
+  "name": {},
+  "eventDates": {}
+}

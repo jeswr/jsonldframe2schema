@@ -758,6 +758,169 @@ Steps:
 }
       </pre>
     </section>
+
+    <section>
+      <h3>Value Objects with Language Tags</h3>
+      
+      <p>Value objects allow properties to have both simple string values and structured objects with metadata:</p>
+      
+      <pre class="example json" title="Value Object Frame">
+{
+  "@context": {
+    "@vocab": "http://schema.org/"
+  },
+  "@type": "Article",
+  "headline": {
+    "@value": {},
+    "@language": "en"
+  }
+}
+      </pre>
+      
+      <p>The algorithm produces (with <code>graphOnly=true</code>):</p>
+      
+      <pre class="example json" title="Generated Schema with Value Object">
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": { "const": "Article" },
+    "headline": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "@value": {},
+            "@language": { "const": "en" }
+          },
+          "required": ["@value", "@language"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": ["@type", "headline"],
+  "additionalProperties": true
+}
+      </pre>
+      
+      <p>This schema accepts both:</p>
+      <ul>
+        <li><code>"headline": "Breaking News"</code> (simple string)</li>
+        <li><code>"headline": {"@value": "Breaking News", "@language": "en"}</code> (language-tagged value)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Language Maps</h3>
+      
+      <p>Language maps allow properties to specify values in multiple languages using <code>@container: "@language"</code>:</p>
+      
+      <pre class="example json" title="Language Map Frame">
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "description": {
+      "@id": "http://schema.org/description",
+      "@container": "@language"
+    }
+  },
+  "@type": "Product",
+  "name": {},
+  "description": {}
+}
+      </pre>
+      
+      <p>The algorithm produces (with <code>graphOnly=true</code>):</p>
+      
+      <pre class="example json" title="Generated Schema with Language Map">
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": { "const": "Product" },
+    "name": { "type": "string" },
+    "description": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2}|-[0-9]{3})?(-[a-z0-9]+)*$": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": ["@type", "name", "description"],
+  "additionalProperties": true
+}
+      </pre>
+      
+      <p>This schema accepts both:</p>
+      <ul>
+        <li><code>"description": "A great product"</code> (simple string)</li>
+        <li><code>"description": {"en": "A great product", "es": "Un gran producto", "es-419": "Un gran producto"}</code> (language map)</li>
+      </ul>
+      <p>The BCP 47 regex pattern supports language codes like: <code>en</code>, <code>en-US</code>, <code>es-419</code>, <code>zh-Hans-CN</code>.</p>
+    </section>
+
+    <section>
+      <h3>Set and Index Containers</h3>
+      
+      <p>Different container types produce different schema structures:</p>
+      
+      <pre class="example json" title="Container Types Frame">
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "keywords": {
+      "@id": "http://schema.org/keywords",
+      "@container": "@set"
+    },
+    "metadata": {
+      "@id": "http://schema.org/metadata",
+      "@container": "@index"
+    }
+  },
+  "@type": "BlogPost",
+  "keywords": {},
+  "metadata": {}
+}
+      </pre>
+      
+      <p>The algorithm produces (with <code>graphOnly=true</code>):</p>
+      
+      <pre class="example json" title="Generated Schema with Containers">
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": { "const": "BlogPost" },
+    "keywords": {
+      "type": "array",
+      "uniqueItems": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "required": ["@type", "keywords", "metadata"],
+  "additionalProperties": true
+}
+      </pre>
+      
+      <p>This schema validates:</p>
+      <ul>
+        <li><code>keywords</code> as an array with unique items (set semantics)</li>
+        <li><code>metadata</code> as an object with arbitrary string keys (index map)</li>
+      </ul>
+    </section>
   </section>
 
   <section class="informative">
@@ -838,6 +1001,36 @@ Steps:
           <td>Context type coercion</td>
           <td>JSON Schema type inference</td>
           <td>XSD types → JSON types</td>
+        </tr>
+        <tr>
+          <td><code>@value</code> with <code>@language</code></td>
+          <td><code>oneOf</code> (string or value object)</td>
+          <td>Language-tagged literals</td>
+        </tr>
+        <tr>
+          <td><code>@value</code> with <code>@type</code></td>
+          <td><code>oneOf</code> (string or typed value object)</td>
+          <td>Typed literals (e.g., dates)</td>
+        </tr>
+        <tr>
+          <td><code>@container: "@language"</code></td>
+          <td><code>oneOf</code> (string or language map)</td>
+          <td>Language map with BCP 47 pattern</td>
+        </tr>
+        <tr>
+          <td><code>@container: "@index"</code></td>
+          <td><code>type: "object"</code> with <code>additionalProperties</code></td>
+          <td>Index map with arbitrary keys</td>
+        </tr>
+        <tr>
+          <td><code>@container: "@set"</code></td>
+          <td><code>type: "array", uniqueItems: true</code></td>
+          <td>Set of unique items</td>
+        </tr>
+        <tr>
+          <td><code>@container: "@list"</code></td>
+          <td><code>type: "array"</code></td>
+          <td>Ordered list</td>
         </tr>
       </tbody>
     </table>

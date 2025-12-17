@@ -307,6 +307,173 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIn("optional", graph_items["properties"])
 
 
+class TestNewFeatures(unittest.TestCase):
+    """Tests for newly implemented features like @reverse, value objects, etc."""
+
+    def test_reverse_property(self):
+        """Test @reverse property is a framing keyword and not in schema."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Person",
+            "name": {},
+            "@reverse": {"author": {"@type": "Book", "title": {}}},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # @reverse should NOT be in the schema properties
+        # It's a framing keyword for querying, not an output property
+        self.assertNotIn("@reverse", schema["properties"])
+
+        # The frame should still generate a valid schema
+        self.assertIn("@type", schema["properties"])
+        self.assertIn("name", schema["properties"])
+
+    def test_reverse_property_required(self):
+        """Test that @reverse is skipped during schema generation."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Person",
+            "@reverse": {"author": {"@type": "Book"}},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # @reverse should NOT be in required or properties
+        self.assertNotIn("@reverse", schema.get("required", []))
+        self.assertNotIn("@reverse", schema["properties"])
+
+    def test_value_object_with_language(self):
+        """Test value object frame with @language constraint."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Person",
+            "name": {"@value": {}, "@language": "en"},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that name property allows string or value object
+        self.assertIn("name", schema["properties"])
+        name_schema = schema["properties"]["name"]
+        self.assertIn("oneOf", name_schema)
+        self.assertEqual(len(name_schema["oneOf"]), 2)
+
+        # First option should be simple string
+        self.assertEqual(name_schema["oneOf"][0]["type"], "string")
+
+        # Second option should be value object with language constraint
+        value_obj = name_schema["oneOf"][1]
+        self.assertEqual(value_obj["type"], "object")
+        self.assertIn("@value", value_obj["properties"])
+        self.assertIn("@language", value_obj["properties"])
+        self.assertEqual(value_obj["properties"]["@language"]["const"], "en")
+
+    def test_value_object_with_type(self):
+        """Test value object frame with @type constraint."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Article",
+            "datePublished": {"@value": {}, "@type": "xsd:date"},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that datePublished allows string or typed value object
+        self.assertIn("datePublished", schema["properties"])
+        date_schema = schema["properties"]["datePublished"]
+        self.assertIn("oneOf", date_schema)
+
+        # Second option should have @type constraint
+        value_obj = date_schema["oneOf"][1]
+        self.assertIn("@type", value_obj["properties"])
+        self.assertEqual(value_obj["properties"]["@type"]["const"], "xsd:date")
+
+    def test_language_map_container(self):
+        """Test @container: @language creates language map schema."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "name": {
+                    "@id": "http://schema.org/name",
+                    "@container": "@language",
+                },
+            },
+            "@type": "Person",
+            "name": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that name property allows string or language map
+        self.assertIn("name", schema["properties"])
+        name_schema = schema["properties"]["name"]
+        self.assertIn("oneOf", name_schema)
+
+        # Second option should be object with pattern properties
+        lang_map = name_schema["oneOf"][1]
+        self.assertEqual(lang_map["type"], "object")
+        self.assertIn("patternProperties", lang_map)
+        self.assertFalse(lang_map["additionalProperties"])
+
+    def test_index_container(self):
+        """Test @container: @index creates index map schema."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "address": {
+                    "@id": "http://schema.org/address",
+                    "@container": "@index",
+                },
+            },
+            "@type": "Organization",
+            "address": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that address property is object with additionalProperties
+        self.assertIn("address", schema["properties"])
+        address_schema = schema["properties"]["address"]
+        self.assertEqual(address_schema["type"], "object")
+        self.assertIn("additionalProperties", address_schema)
+
+    def test_set_container(self):
+        """Test @container: @set creates array with uniqueItems."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "keywords": {
+                    "@id": "http://schema.org/keywords",
+                    "@container": "@set",
+                },
+            },
+            "@type": "Article",
+            "keywords": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that keywords is array with uniqueItems
+        self.assertIn("keywords", schema["properties"])
+        keywords_schema = schema["properties"]["keywords"]
+        self.assertEqual(keywords_schema["type"], "array")
+        self.assertTrue(keywords_schema["uniqueItems"])
+
+    def test_list_container(self):
+        """Test @container: @list creates ordered array schema."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "itemListElement": {
+                    "@id": "http://schema.org/itemListElement",
+                    "@container": "@list",
+                },
+            },
+            "@type": "ItemList",
+            "itemListElement": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that itemListElement is array
+        self.assertIn("itemListElement", schema["properties"])
+        list_schema = schema["properties"]["itemListElement"]
+        self.assertEqual(list_schema["type"], "array")
+
+
 class TestAllPredefinedCases(unittest.TestCase):
     """Run all predefined test cases as a batch."""
 
