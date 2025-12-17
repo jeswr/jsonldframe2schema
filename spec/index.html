@@ -93,7 +93,7 @@
   <section>
     <h2>Conformance</h2>
     <p>
-      A conforming implementation MUST implement the algorithm as specified in <a href="#algorithm"></a>.
+      A conforming implementation MUST implement the algorithm as specified in the <a href="#algorithm">Algorithm Definition</a> section.
     </p>
   </section>
 
@@ -818,7 +818,7 @@ Steps:
     <p>The following JSON-LD Framing features have limited or no mapping to JSON Schema:</p>
     
     <ul>
-      <li><strong>@graph containers</strong>: These require special handling and may need wrapper schemas</li>
+      <li><strong>@graph containers</strong>: The algorithm wraps the frame content in a @context and @graph structure by default, or supports graphOnly mode to output just the object schema. However, more complex @graph container patterns may require custom handling.</li>
       <li><strong>Language maps</strong>: JSON Schema has no direct equivalent for language-tagged strings</li>
       <li><strong>@reverse properties</strong>: Reverse relationships don't map naturally to JSON Schema</li>
       <li><strong>Semantic meaning</strong>: JSON Schema validates structure, not RDF semantics</li>
