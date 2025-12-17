@@ -10,7 +10,6 @@ Usage:
 import sys
 import json
 import argparse
-from pathlib import Path
 from typing import Optional
 
 from .converter import frame_to_schema
@@ -33,10 +32,10 @@ def main(argv: Optional[list] = None) -> int:
 Examples:
   # Convert frame from file and print to stdout
   %(prog)s frame.json
-  
+
   # Convert frame and save to file
   %(prog)s frame.json schema.json
-  
+
   # Read from stdin and write to stdout
   cat frame.json | %(prog)s
         """,

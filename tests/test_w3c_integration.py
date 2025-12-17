@@ -13,9 +13,8 @@ from the W3C test suite because:
 """
 
 import json
+import sys
 import unittest
-from pathlib import Path
-from typing import Dict, Any, Optional
 
 from jsonldframe2schema import frame_to_schema
 from tests.conftest import load_json_file
@@ -86,13 +85,13 @@ class TestW3CFrameFiles(unittest.TestCase):
                 )
 
         # Report results
-        print(f"\n\nW3C Frame File Test Results:")
+        print("\n\nW3C Frame File Test Results:")
         print(f"  Successes: {len(successes)}")
         print(f"  Failures: {len(failures)}")
         print(f"  Skipped: {len(skipped)}")
 
         if failures:
-            print(f"\nFailures:")
+            print("\nFailures:")
             for f in failures[:10]:  # Show first 10
                 print(f"  - {f['id']}: {f['error']}")
             if len(failures) > 10:
@@ -189,7 +188,7 @@ class TestConversionConsistency(unittest.TestCase):
         frame_copy = json.loads(json.dumps(original_frame))
 
         # Convert
-        schema = frame_to_schema(original_frame)
+        _ = frame_to_schema(original_frame)
 
         # Original should be unchanged
         self.assertEqual(

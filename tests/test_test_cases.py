@@ -8,7 +8,6 @@ pairs in the test_cases directory. Each pair consists of:
 """
 
 import json
-from pathlib import Path
 import pytest
 
 from jsonldframe2schema import frame_to_schema

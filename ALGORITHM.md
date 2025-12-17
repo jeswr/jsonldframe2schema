@@ -37,7 +37,7 @@ function frameToSchema(frame, schemaVersion = "https://json-schema.org/draft/202
         
         // Preserve context from outer frame if inner doesn't have one
         if "@context" not in frameContent and "@context" in frame:
-            frameContent = { "@context": frame["@context"], ...frameContent }
+            frameContent = merge({ "@context": frame["@context"] }, frameContent)
     
     // Build the schema for graph items (the object schema)
     graphItemSchema = { "type": "object" }
@@ -51,12 +51,11 @@ function frameToSchema(frame, schemaVersion = "https://json-schema.org/draft/202
     // Process the main frame object
     processFrameObject(frameContent, graphItemSchema, flags, context)
     
-    // If graph_only mode, return just the item schema
+    // If graphOnly mode, return just the item schema
     if graphOnly:
-        return {
-            "$schema": schemaVersion,
-            ...graphItemSchema
-        }
+        return merge({
+            "$schema": schemaVersion
+        }, graphItemSchema)
     
     // Build the full document schema with @context and @graph
     schema = {
