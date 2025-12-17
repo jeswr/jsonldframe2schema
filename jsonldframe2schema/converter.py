@@ -50,6 +50,14 @@ class FrameToSchemaConverter:
         "@reverse",
     }
 
+    # Prefix used to mark container types in context map
+    CONTAINER_PREFIX = "@container:"
+    # Separator for encoding both container and type in context map
+    # Note: Using "|" as separator is safe because:
+    # - @container values are keywords (@set, @list, @index, @language) without pipes
+    # - Type URIs in JSON-LD (xsd:*, @id, etc.) do not contain pipe characters
+    CONTEXT_SEPARATOR = "|"
+
     def __init__(
         self,
         schema_version: str = "https://json-schema.org/draft/2020-12/schema",
@@ -144,13 +152,13 @@ class FrameToSchemaConverter:
 
     def _extract_context(self, frame: Dict[str, Any]) -> Dict[str, Optional[str]]:
         """
-        Extract type information from @context.
+        Extract type and container information from @context.
 
         Args:
             frame: JSON-LD Frame object
 
         Returns:
-            Dictionary mapping property names to their type URIs
+            Dictionary mapping property names to their type URIs or container info
         """
         context = frame.get("@context")
         if not context:
@@ -162,16 +170,16 @@ class FrameToSchemaConverter:
         self, context: Union[str, Dict, List]
     ) -> Dict[str, Optional[str]]:
         """
-        Parse JSON-LD context to extract type coercion information using pyld.
+        Parse JSON-LD context to extract type coercion and container information.
 
         This method uses only pyld's expand() function to extract type information,
-        without any custom context parsing logic.
+        without any custom context parsing logic. It also captures @container values.
 
         Args:
             context: JSON-LD context (string, dict, or list)
 
         Returns:
-            Dictionary mapping property names to their type URIs (expanded or prefixed)
+            Dictionary mapping property names to their type URIs or container types
         """
         type_map: Dict[str, Optional[str]] = {}
 
@@ -190,31 +198,56 @@ class FrameToSchemaConverter:
                     if isinstance(value, str):
                         continue
 
-                    # Check if this property definition has type coercion
-                    if isinstance(value, dict) and "@type" in value:
-                        # Use pyld.expand() to resolve the type URI
-                        test_doc = {"@context": context, key: "test_value"}
-                        try:
-                            expanded = jsonld.expand(test_doc)
-                            # Extract type from expanded document
-                            if expanded and len(expanded) > 0:
-                                for prop_uri, prop_values in expanded[0].items():
-                                    if not prop_uri.startswith("@"):
-                                        if (
-                                            prop_values
-                                            and isinstance(prop_values, list)
-                                            and len(prop_values) > 0
-                                            and isinstance(prop_values[0], dict)
-                                        ):
-                                            type_uri = prop_values[0].get("@type")
-                                            if type_uri:
-                                                type_map[key] = type_uri
-                                                break
-                        except (jsonld.JsonLdError, ValueError, TypeError):
-                            # If pyld cannot process this property, store None
+                    # Check if this property definition has @container or @type
+                    if isinstance(value, dict) and (
+                        "@container" in value or "@type" in value
+                    ):
+                        parts = []
+
+                        # Handle @container directive
+                        if "@container" in value:
+                            container_type = value["@container"]
+                            parts.append(f"{self.CONTAINER_PREFIX}{container_type}")
+
+                        # Handle @type coercion
+                        if "@type" in value:
+                            # Use pyld.expand() to resolve the type URI
+                            test_doc = {"@context": context, key: "test_value"}
+                            try:
+                                expanded = jsonld.expand(test_doc)
+                                # Extract type from expanded document
+                                if expanded and len(expanded) > 0:
+                                    for prop_uri, prop_values in expanded[0].items():
+                                        if not prop_uri.startswith("@"):
+                                            if (
+                                                prop_values
+                                                and isinstance(prop_values, list)
+                                                and len(prop_values) > 0
+                                                and isinstance(prop_values[0], dict)
+                                            ):
+                                                type_uri = prop_values[0].get("@type")
+                                                if type_uri:
+                                                    # Validate that type URI doesn't contain separator
+                                                    # (should never happen with valid JSON-LD types)
+                                                    if (
+                                                        self.CONTEXT_SEPARATOR
+                                                        in type_uri
+                                                    ):
+                                                        # Skip this type if it contains separator
+                                                        continue
+                                                    parts.append(type_uri)
+                                                    break
+                            except (jsonld.JsonLdError, ValueError, TypeError):
+                                # If pyld cannot process this property, continue
+                                pass
+
+                        # Store the combined value or set to None if no parts
+                        if parts:
+                            type_map[key] = self.CONTEXT_SEPARATOR.join(parts)
+                        else:
                             type_map[key] = None
                     elif isinstance(value, dict):
-                        # Property definition without type coercion
+                        # Property definition without type coercion or container
                         type_map[key] = None
 
             # Process array contexts (recursively)
@@ -260,6 +293,9 @@ class FrameToSchemaConverter:
             properties["@id"] = id_schema
             if not self._is_empty(frame["@id"]):
                 required.append("@id")
+
+        # Note: @reverse is a framing keyword used for querying,
+        # not a property that appears in the output, so we skip it
 
         # Process regular properties
         for key, value in frame.items():
@@ -367,20 +403,48 @@ class FrameToSchemaConverter:
             # Array frame
             return self._process_array_frame(value, flags, context)
         elif isinstance(value, dict):
+            # Check if this is a value object frame (has @value with @language or @type)
+            if self._is_value_object_frame(value):
+                return self._process_value_object_frame(value, flags, context)
             # Nested object frame
             return self._process_nested_frame(value, flags, context)
 
         return {}
 
+    def _is_value_object_frame(self, value: Dict[str, Any]) -> bool:
+        """
+        Check if a dict is a value object frame pattern.
+
+        A value object frame has @language or @type alongside @value.
+        Just having @value alone is NOT a value object frame - it's a
+        nested object with @value as a property.
+
+        Args:
+            value: Dictionary to check
+
+        Returns:
+            True if this is a value object frame
+        """
+        if "@value" not in value:
+            return False
+
+        # Only treat as value object frame if @language or @type is present
+        # This distinguishes {"@value": {}, "@language": "en"} (value object frame)
+        # from {"@value": {}} (nested object with @value property)
+        if "@language" in value or "@type" in value:
+            return True
+
+        return False
+
     def _infer_type_from_context(
         self, key: str, context_type: Optional[str]
     ) -> Dict[str, Any]:
         """
-        Infer JSON Schema type from JSON-LD context type.
+        Infer JSON Schema type from JSON-LD context type or container.
 
         Args:
             key: Property name
-            context_type: Type from context or None
+            context_type: Type from context, container spec, or combination of both
 
         Returns:
             JSON Schema type definition
@@ -388,9 +452,82 @@ class FrameToSchemaConverter:
         if context_type is None:
             return {"type": "string"}
 
-        # Map JSON-LD types to JSON Schema types
-        if context_type in self.TYPE_MAPPINGS:
-            return copy.deepcopy(self.TYPE_MAPPINGS[context_type])
+        # Check if this contains both container and type (separated by CONTEXT_SEPARATOR)
+        container_spec = None
+        type_spec = None
+
+        if self.CONTEXT_SEPARATOR in context_type:
+            # Split and identify parts
+            parts = context_type.split(self.CONTEXT_SEPARATOR)
+            for part in parts:
+                if part.startswith(self.CONTAINER_PREFIX):
+                    container_spec = part
+                else:
+                    type_spec = part
+        elif context_type.startswith(self.CONTAINER_PREFIX):
+            container_spec = context_type
+        else:
+            type_spec = context_type
+
+        # Process container if present
+        if container_spec:
+            # Extract container type using structured approach
+            container_type = container_spec[len(self.CONTAINER_PREFIX) :]
+
+            # Get the item schema (either from type_spec or default to string)
+            if type_spec and type_spec in self.TYPE_MAPPINGS:
+                item_schema = copy.deepcopy(self.TYPE_MAPPINGS[type_spec])
+            else:
+                item_schema = {"type": "string"}
+
+            if container_type == "@language":
+                # Language map: allows string or object with language codes as keys
+                # BCP 47 language tags: language[-script][-region][-variant][-extension][-privateuse]
+                # This pattern is more permissive to handle common cases
+                return {
+                    "oneOf": [
+                        item_schema,
+                        {
+                            "type": "object",
+                            "patternProperties": {
+                                # Matches: en, en-US, es-419, zh-Hans-CN, etc.
+                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2}|-[0-9]{3})?(-[a-z0-9]+)*$": item_schema
+                            },
+                            "additionalProperties": False,
+                        },
+                    ]
+                }
+            elif container_type == "@index":
+                # Index container: object with arbitrary keys
+                # Only add items schema if there's type coercion
+                if type_spec:
+                    return {
+                        "type": "object",
+                        "additionalProperties": item_schema,
+                    }
+                else:
+                    return {
+                        "type": "object",
+                        "additionalProperties": {"type": "string"},
+                    }
+            elif container_type == "@set":
+                # Set container: array with unique items
+                # Only add items schema if there's type coercion
+                if type_spec:
+                    return {"type": "array", "uniqueItems": True, "items": item_schema}
+                else:
+                    return {"type": "array", "uniqueItems": True}
+            elif container_type == "@list":
+                # List container: ordered array
+                # Only add items schema if there's type coercion
+                if type_spec:
+                    return {"type": "array", "items": item_schema}
+                else:
+                    return {"type": "array"}
+
+        # Map JSON-LD types to JSON Schema types (no container)
+        if type_spec and type_spec in self.TYPE_MAPPINGS:
+            return copy.deepcopy(self.TYPE_MAPPINGS[type_spec])
 
         return {"type": "string"}
 
@@ -470,6 +607,62 @@ class FrameToSchemaConverter:
         self._process_frame_object(frame_obj, nested_schema, nested_flags, context)
 
         return nested_schema
+
+    def _process_value_object_frame(
+        self,
+        value_frame: Dict[str, Any],
+        flags: Dict[str, Any],
+        context: Dict[str, Optional[str]],
+    ) -> Dict[str, Any]:
+        """
+        Process value object frame (contains @value with @language and/or @type).
+
+        Args:
+            value_frame: Frame containing value object pattern
+            flags: Framing flags
+            context: Type context mapping
+
+        Returns:
+            JSON Schema that allows string OR value object
+        """
+        schemas = []
+
+        # Allow simple string value
+        schemas.append({"type": "string"})
+
+        # Build value object schema
+        value_obj_schema: Dict[str, Any] = {
+            "type": "object",
+            "properties": {"@value": {}},
+            "required": ["@value"],
+            "additionalProperties": False,
+        }
+
+        # Handle @language constraint
+        if "@language" in value_frame:
+            lang = value_frame["@language"]
+            if isinstance(lang, str):
+                # Specific language required
+                value_obj_schema["properties"]["@language"] = {"const": lang}
+                value_obj_schema["required"].append("@language")
+            elif self._is_empty(lang):
+                # Any language allowed
+                value_obj_schema["properties"]["@language"] = {"type": "string"}
+                value_obj_schema["required"].append("@language")
+
+        # Handle @type constraint for typed literals
+        if "@type" in value_frame:
+            type_val = value_frame["@type"]
+            if isinstance(type_val, str):
+                value_obj_schema["properties"]["@type"] = {"const": type_val}
+                value_obj_schema["required"].append("@type")
+            elif self._is_empty(type_val):
+                value_obj_schema["properties"]["@type"] = {"type": "string"}
+                value_obj_schema["required"].append("@type")
+
+        schemas.append(value_obj_schema)
+
+        return {"oneOf": schemas}
 
     def _should_be_required(self, key: str, value: Any, flags: Dict[str, Any]) -> bool:
         """

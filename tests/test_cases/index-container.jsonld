@@ -1,0 +1,12 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "metadata": {
+      "@id": "http://schema.org/metadata",
+      "@container": "@index"
+    }
+  },
+  "@type": "Report",
+  "name": {},
+  "metadata": {}
+}

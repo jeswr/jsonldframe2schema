@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Article"
+          },
+          "headline": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "@value": {},
+                  "@language": {
+                    "const": "en"
+                  }
+                },
+                "required": ["@value", "@language"],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "alternativeHeadline": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "@value": {},
+                  "@language": {
+                    "type": "string"
+                  }
+                },
+                "required": ["@value", "@language"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": ["@type", "headline", "alternativeHeadline"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["@context", "@graph"],
+  "additionalProperties": true
+}

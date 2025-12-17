@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Event"
+          },
+          "name": {
+            "type": "string"
+          },
+          "eventDates": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        "required": ["@type", "name", "eventDates"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["@context", "@graph"],
+  "additionalProperties": true
+}

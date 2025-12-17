@@ -1,0 +1,12 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "keywords": {
+      "@id": "http://schema.org/keywords",
+      "@container": "@set"
+    }
+  },
+  "@type": "Article",
+  "name": {},
+  "keywords": {}
+}
