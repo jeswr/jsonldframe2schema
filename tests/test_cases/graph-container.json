@@ -1,5 +1,25 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
+  "properties": {
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Person"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["@type", "name"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }

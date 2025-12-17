@@ -15,11 +15,22 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@type": { "const": "ex:Person" },
-      "ex:name": { "type": "string" },
-      "ex:email": { "type": "string" }
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "ex:Person" },
+            "ex:name": { "type": "string" },
+            "ex:email": { "type": "string" }
+          },
+          "required": ["@type", "ex:name", "ex:email"],
+          "additionalProperties": true
+        }
+      }
     },
-    "required": ["@type", "ex:name", "ex:email"],
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

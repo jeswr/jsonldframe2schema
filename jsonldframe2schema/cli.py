@@ -64,6 +64,12 @@ Examples:
         "--compact", action="store_true", help="Output compact JSON (no indentation)"
     )
 
+    parser.add_argument(
+        "--graph-only",
+        action="store_true",
+        help="Output only the schema for @graph items, without @context and @graph wrapper",
+    )
+
     args = parser.parse_args(argv)
 
     # Determine output file
@@ -79,7 +85,9 @@ Examples:
             frame = json.load(sys.stdin)
 
         # Convert to schema
-        schema = frame_to_schema(frame, schema_version=args.schema_version)
+        schema = frame_to_schema(
+            frame, schema_version=args.schema_version, graph_only=args.graph_only
+        )
 
         # Format output
         indent = None if args.compact else args.indent

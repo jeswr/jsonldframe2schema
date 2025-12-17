@@ -2,10 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": {
-      "const": "Person"
-    },
-    "children": {
+    "@context": {},
+    "@graph": {
       "type": "array",
       "items": {
         "type": "object",
@@ -13,15 +11,28 @@
           "@type": {
             "const": "Person"
           },
-          "name": {
-            "type": "string"
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "@type": {
+                  "const": "Person"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": ["@type", "name"],
+              "additionalProperties": true
+            }
           }
         },
-        "required": ["@type", "name"],
+        "required": ["@type", "children"],
         "additionalProperties": true
       }
     }
   },
-  "required": ["@type", "children"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }

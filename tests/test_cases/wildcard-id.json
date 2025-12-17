@@ -2,14 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@id": {
-      "type": "string",
-      "format": "uri"
-    },
-    "name": {
-      "type": "string"
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@id": {
+            "type": "string",
+            "format": "uri"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": true
+      }
     }
   },
-  "required": ["name"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }

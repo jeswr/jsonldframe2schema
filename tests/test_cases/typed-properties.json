@@ -2,20 +2,31 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": {
-      "const": "Event"
-    },
-    "name": {
-      "type": "string"
-    },
-    "startDate": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "attendeeCount": {
-      "type": "integer"
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Event"
+          },
+          "name": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attendeeCount": {
+            "type": "integer"
+          }
+        },
+        "required": ["@type", "name", "startDate", "attendeeCount"],
+        "additionalProperties": true
+      }
     }
   },
-  "required": ["@type", "name", "startDate", "attendeeCount"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }

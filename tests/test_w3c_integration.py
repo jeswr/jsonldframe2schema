@@ -126,11 +126,12 @@ class TestW3CFrameFiles(unittest.TestCase):
 
         schema = frame_to_schema(frame)
 
-        # If @explicit is true, additionalProperties should be false
+        # If @explicit is true, additionalProperties should be false in @graph items
         if frame.get("@explicit") is True:
+            graph_items = schema["properties"]["@graph"]["items"]
             self.assertFalse(
-                schema.get("additionalProperties", True),
-                "@explicit: true should set additionalProperties: false",
+                graph_items.get("additionalProperties", True),
+                "@explicit: true should set additionalProperties: false in @graph items",
             )
 
     def test_specific_frame_t0011_embed(self):

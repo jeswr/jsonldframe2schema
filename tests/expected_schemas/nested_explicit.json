@@ -15,19 +15,30 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@type": { "const": "ex:Organization" },
-      "ex:name": { "type": "string" },
-      "ex:member": {
-        "type": "object",
-        "properties": {
-          "@type": { "const": "ex:Person" },
-          "ex:name": { "type": "string" }
-        },
-        "required": ["@type", "ex:name"],
-        "additionalProperties": false
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "ex:Organization" },
+            "ex:name": { "type": "string" },
+            "ex:member": {
+              "type": "object",
+              "properties": {
+                "@type": { "const": "ex:Person" },
+                "ex:name": { "type": "string" }
+              },
+              "required": ["@type", "ex:name"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["@type", "ex:name", "ex:member"],
+          "additionalProperties": false
+        }
       }
     },
-    "required": ["@type", "ex:name", "ex:member"],
-    "additionalProperties": false
+    "required": ["@context", "@graph"],
+    "additionalProperties": true
   }
 }

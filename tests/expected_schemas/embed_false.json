@@ -13,20 +13,31 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@type": { "const": "ex:Person" },
-      "ex:knows": {
-        "oneOf": [
-          { "type": "string", "format": "uri" },
-          {
-            "type": "object",
-            "properties": { "@id": { "type": "string", "format": "uri" } },
-            "required": ["@id"],
-            "additionalProperties": false
-          }
-        ]
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "ex:Person" },
+            "ex:knows": {
+              "oneOf": [
+                { "type": "string", "format": "uri" },
+                {
+                  "type": "object",
+                  "properties": { "@id": { "type": "string", "format": "uri" } },
+                  "required": ["@id"],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": ["@type", "ex:knows"],
+          "additionalProperties": true
+        }
       }
     },
-    "required": ["@type", "ex:knows"],
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

@@ -6,6 +6,17 @@
   "expected_schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
+    "properties": {
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

@@ -2,29 +2,40 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": {
-      "const": "Person"
-    },
-    "knows": {
-      "oneOf": [
-        {
-          "type": "string",
-          "format": "uri"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "@id": {
-              "type": "string",
-              "format": "uri"
-            }
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Person"
           },
-          "required": ["@id"],
-          "additionalProperties": false
-        }
-      ]
+          "knows": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "@id": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": ["@id"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": ["@type", "knows"],
+        "additionalProperties": true
+      }
     }
   },
-  "required": ["@type", "knows"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }

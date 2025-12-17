@@ -51,15 +51,21 @@ class FrameToSchemaConverter:
     }
 
     def __init__(
-        self, schema_version: str = "https://json-schema.org/draft/2020-12/schema"
+        self,
+        schema_version: str = "https://json-schema.org/draft/2020-12/schema",
+        graph_only: bool = False,
     ):
         """
         Initialize the converter.
 
         Args:
             schema_version: JSON Schema version URI to use in output
+            graph_only: If True, output only the schema for @graph items (without
+                       @context and @graph wrapper). Default is False, which outputs
+                       a full document schema with @context and @graph.
         """
         self.schema_version = schema_version
+        self.graph_only = graph_only
 
     def convert(self, frame: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -69,18 +75,53 @@ class FrameToSchemaConverter:
             frame: JSON-LD Frame object
 
         Returns:
-            JSON Schema document
+            JSON Schema document. By default, this is a full document schema with
+            @context and @graph properties. If graph_only=True was set during
+            initialization, returns only the schema for objects within @graph.
         """
-        schema: Dict[str, Any] = {"$schema": self.schema_version, "type": "object"}
+        # Check if frame has @graph - if so, use the content from @graph
+        frame_content = frame
+        if "@graph" in frame:
+            graph_value = frame["@graph"]
+            # Handle both array and single object in @graph
+            if isinstance(graph_value, list) and len(graph_value) > 0:
+                frame_content = graph_value[0]
+            elif isinstance(graph_value, dict):
+                frame_content = graph_value
+            # Preserve context from outer frame if inner doesn't have one
+            if "@context" not in frame_content and "@context" in frame:
+                frame_content = {"@context": frame["@context"], **frame_content}
+
+        # Build the schema for graph items (the object schema)
+        graph_item_schema: Dict[str, Any] = {"type": "object"}
 
         # Extract global framing flags
-        flags = self._extract_framing_flags(frame)
+        flags = self._extract_framing_flags(frame_content)
 
         # Extract context for type information
-        context = self._extract_context(frame)
+        context = self._extract_context(frame_content)
 
         # Process the main frame object
-        self._process_frame_object(frame, schema, flags, context)
+        self._process_frame_object(frame_content, graph_item_schema, flags, context)
+
+        # If graph_only mode, return just the item schema with $schema
+        if self.graph_only:
+            return {"$schema": self.schema_version, **graph_item_schema}
+
+        # Build the full document schema with @context and @graph
+        schema: Dict[str, Any] = {
+            "$schema": self.schema_version,
+            "type": "object",
+            "properties": {
+                "@context": {},
+                "@graph": {
+                    "type": "array",
+                    "items": graph_item_schema,
+                },
+            },
+            "required": ["@context", "@graph"],
+            "additionalProperties": True,
+        }
 
         return schema
 
@@ -499,6 +540,7 @@ class FrameToSchemaConverter:
 def frame_to_schema(
     frame: Dict[str, Any],
     schema_version: str = "https://json-schema.org/draft/2020-12/schema",
+    graph_only: bool = False,
 ) -> Dict[str, Any]:
     """
     Convert a JSON-LD Frame to JSON Schema.
@@ -509,6 +551,9 @@ def frame_to_schema(
     Args:
         frame: JSON-LD Frame object
         schema_version: JSON Schema version URI to use
+        graph_only: If True, output only the schema for @graph items (without
+                   @context and @graph wrapper). Default is False, which outputs
+                   a full document schema with @context and @graph.
 
     Returns:
         JSON Schema document
@@ -520,8 +565,14 @@ def frame_to_schema(
         ...     "age": {}
         ... }
         >>> schema = frame_to_schema(frame)
-        >>> schema["type"]
-        'object'
+        >>> schema["properties"]["@graph"]["items"]["properties"]["@type"]
+        {'const': 'Person'}
+        >>> # For graph-only output (just the object schema):
+        >>> schema = frame_to_schema(frame, graph_only=True)
+        >>> schema["properties"]["@type"]
+        {'const': 'Person'}
     """
-    converter = FrameToSchemaConverter(schema_version=schema_version)
+    converter = FrameToSchemaConverter(
+        schema_version=schema_version, graph_only=graph_only
+    )
     return converter.convert(frame)

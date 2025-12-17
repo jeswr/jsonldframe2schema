@@ -14,10 +14,21 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@type": { "const": "ex:Person" },
-      "ex:homepage": { "type": "string" }
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "ex:Person" },
+            "ex:homepage": { "type": "string" }
+          },
+          "required": ["@type", "ex:homepage"],
+          "additionalProperties": true
+        }
+      }
     },
-    "required": ["@type", "ex:homepage"],
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

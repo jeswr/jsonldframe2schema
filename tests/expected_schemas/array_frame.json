@@ -13,21 +13,32 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@type": { "const": "ex:Person" },
-      "ex:knows": {
+      "@context": {},
+      "@graph": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
             "@type": { "const": "ex:Person" },
-            "ex:name": { "type": "string" }
+            "ex:knows": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "@type": { "const": "ex:Person" },
+                  "ex:name": { "type": "string" }
+                },
+                "required": ["@type", "ex:name"],
+                "additionalProperties": true
+              }
+            }
           },
-          "required": ["@type", "ex:name"],
+          "required": ["@type", "ex:knows"],
           "additionalProperties": true
         }
       }
     },
-    "required": ["@type", "ex:knows"],
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

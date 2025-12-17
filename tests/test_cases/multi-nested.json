@@ -2,36 +2,47 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": {
-      "const": "Article"
-    },
-    "author": {
-      "type": "object",
-      "properties": {
-        "@type": {
-          "const": "Person"
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Article"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "const": "Person"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["@type", "name"],
+            "additionalProperties": true
+          },
+          "publisher": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "const": "Organization"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["@type", "name"],
+            "additionalProperties": true
+          }
         },
-        "name": {
-          "type": "string"
-        }
-      },
-      "required": ["@type", "name"],
-      "additionalProperties": true
-    },
-    "publisher": {
-      "type": "object",
-      "properties": {
-        "@type": {
-          "const": "Organization"
-        },
-        "name": {
-          "type": "string"
-        }
-      },
-      "required": ["@type", "name"],
-      "additionalProperties": true
+        "required": ["@type", "author", "publisher"],
+        "additionalProperties": true
+      }
     }
   },
-  "required": ["@type", "author", "publisher"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }

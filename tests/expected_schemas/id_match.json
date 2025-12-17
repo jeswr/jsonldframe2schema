@@ -13,10 +13,21 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@id": { "const": "http://example.org/library" },
-      "name": { "type": "string" }
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@id": { "const": "http://example.org/library" },
+            "name": { "type": "string" }
+          },
+          "required": ["@id", "name"],
+          "additionalProperties": true
+        }
+      }
     },
-    "required": ["@id", "name"],
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

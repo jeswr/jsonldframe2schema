@@ -2,10 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": {
-      "const": "Person"
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Person"
+          }
+        },
+        "required": ["@type"],
+        "additionalProperties": true
+      }
     }
   },
-  "required": ["@type"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }

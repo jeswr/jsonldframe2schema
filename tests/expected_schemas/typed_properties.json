@@ -21,13 +21,24 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@type": { "const": "ex:Person" },
-      "ex:age": { "type": "integer" },
-      "ex:height": { "type": "number" },
-      "ex:active": { "type": "boolean" },
-      "ex:birthDate": { "type": "string", "format": "date" }
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "ex:Person" },
+            "ex:age": { "type": "integer" },
+            "ex:height": { "type": "number" },
+            "ex:active": { "type": "boolean" },
+            "ex:birthDate": { "type": "string", "format": "date" }
+          },
+          "required": ["@type", "ex:age", "ex:height", "ex:active", "ex:birthDate"],
+          "additionalProperties": true
+        }
+      }
     },
-    "required": ["@type", "ex:age", "ex:height", "ex:active", "ex:birthDate"],
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

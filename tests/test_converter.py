@@ -262,10 +262,15 @@ class TestEdgeCases(unittest.TestCase):
         }
         schema = frame_to_schema(frame)
 
-        # Navigate to deepest level
+        # Navigate through @graph wrapper to deepest level
         self.assertIn("properties", schema)
-        self.assertIn("level1", schema["properties"])
-        level1 = schema["properties"]["level1"]
+        self.assertIn("@graph", schema["properties"])
+        graph_schema = schema["properties"]["@graph"]
+        self.assertEqual(graph_schema["type"], "array")
+        items_schema = graph_schema["items"]
+        self.assertIn("properties", items_schema)
+        self.assertIn("level1", items_schema["properties"])
+        level1 = items_schema["properties"]["level1"]
         self.assertIn("properties", level1)
         self.assertIn("level2", level1["properties"])
         level2 = level1["properties"]["level2"]
@@ -279,8 +284,9 @@ class TestEdgeCases(unittest.TestCase):
         """Test property with empty array value."""
         frame = {"@type": "Test", "items": []}
         schema = frame_to_schema(frame)
-        self.assertIn("items", schema["properties"])
-        items_schema = schema["properties"]["items"]
+        graph_items = schema["properties"]["@graph"]["items"]
+        self.assertIn("items", graph_items["properties"])
+        items_schema = graph_items["properties"]["items"]
         self.assertEqual(items_schema["type"], "array")
 
     def test_literal_value_in_frame(self):
@@ -288,17 +294,19 @@ class TestEdgeCases(unittest.TestCase):
         frame = {"@type": "Test", "status": "active", "count": 42, "enabled": True}
         schema = frame_to_schema(frame)
 
-        # Check that literal values create defaults
-        self.assertIn("status", schema["properties"])
-        self.assertIn("count", schema["properties"])
-        self.assertIn("enabled", schema["properties"])
+        # Check that literal values create defaults (inside @graph items)
+        graph_items = schema["properties"]["@graph"]["items"]
+        self.assertIn("status", graph_items["properties"])
+        self.assertIn("count", graph_items["properties"])
+        self.assertIn("enabled", graph_items["properties"])
 
     def test_frame_with_null_value(self):
         """Test frame with null value."""
         frame = {"@type": "Test", "optional": None}
         schema = frame_to_schema(frame)
-        # Should handle None gracefully
-        self.assertIn("optional", schema["properties"])
+        # Should handle None gracefully (inside @graph items)
+        graph_items = schema["properties"]["@graph"]["items"]
+        self.assertIn("optional", graph_items["properties"])
 
 
 class TestAllPredefinedCases(unittest.TestCase):

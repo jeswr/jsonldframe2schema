@@ -13,10 +13,21 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "@type": { "enum": ["ex:Person", "ex:Agent"] },
-      "ex:name": { "type": "string" }
+      "@context": {},
+      "@graph": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "@type": { "enum": ["ex:Person", "ex:Agent"] },
+            "ex:name": { "type": "string" }
+          },
+          "required": ["@type", "ex:name"],
+          "additionalProperties": true
+        }
+      }
     },
-    "required": ["@type", "ex:name"],
+    "required": ["@context", "@graph"],
     "additionalProperties": true
   }
 }

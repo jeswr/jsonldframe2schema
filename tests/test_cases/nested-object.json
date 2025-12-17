@@ -2,26 +2,37 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": {
-      "const": "Person"
-    },
-    "address": {
-      "type": "object",
-      "properties": {
-        "@type": {
-          "const": "PostalAddress"
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Person"
+          },
+          "address": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "const": "PostalAddress"
+              },
+              "streetAddress": {
+                "type": "string"
+              },
+              "postalCode": {
+                "type": "string"
+              }
+            },
+            "required": ["@type", "streetAddress", "postalCode"],
+            "additionalProperties": true
+          }
         },
-        "streetAddress": {
-          "type": "string"
-        },
-        "postalCode": {
-          "type": "string"
-        }
-      },
-      "required": ["@type", "streetAddress", "postalCode"],
-      "additionalProperties": true
+        "required": ["@type", "address"],
+        "additionalProperties": true
+      }
     }
   },
-  "required": ["@type", "address"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }
