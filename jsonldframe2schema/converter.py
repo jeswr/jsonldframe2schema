@@ -442,8 +442,8 @@ class FrameToSchemaConverter:
                         {
                             "type": "object",
                             "patternProperties": {
-                                # Matches: en, en-US, zh-Hans-CN, etc.
-                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?(-[a-z0-9]+)*$": {
+                                # Matches: en, en-US, es-419, zh-Hans-CN, etc.
+                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2}|-[0-9]{3})?(-[a-z0-9]+)*$": {
                                     "type": "string"
                                 }
                             },
@@ -554,7 +554,7 @@ class FrameToSchemaConverter:
         context: Dict[str, Optional[str]],
     ) -> Dict[str, Any]:
         """
-        Process value object frame (contains @value, @language, or @type).
+        Process value object frame (contains @value with @language and/or @type).
 
         Args:
             value_frame: Frame containing value object pattern
@@ -574,6 +574,7 @@ class FrameToSchemaConverter:
             "type": "object",
             "properties": {"@value": {}},
             "required": ["@value"],
+            "additionalProperties": False,
         }
 
         # Handle @language constraint
@@ -582,17 +583,21 @@ class FrameToSchemaConverter:
             if isinstance(lang, str):
                 # Specific language required
                 value_obj_schema["properties"]["@language"] = {"const": lang}
+                value_obj_schema["required"].append("@language")
             elif self._is_empty(lang):
                 # Any language allowed
                 value_obj_schema["properties"]["@language"] = {"type": "string"}
+                value_obj_schema["required"].append("@language")
 
         # Handle @type constraint for typed literals
         if "@type" in value_frame:
             type_val = value_frame["@type"]
             if isinstance(type_val, str):
                 value_obj_schema["properties"]["@type"] = {"const": type_val}
+                value_obj_schema["required"].append("@type")
             elif self._is_empty(type_val):
                 value_obj_schema["properties"]["@type"] = {"type": "string"}
+                value_obj_schema["required"].append("@type")
 
         schemas.append(value_obj_schema)
 
