@@ -1,4 +1,4 @@
-name: Deploy ReSpec to GitHub Pages
+name: Deploy Docs and Playground to GitHub Pages
 
 on:
   push:
@@ -30,10 +30,17 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
+      - name: Prepare site content
+        run: |
+          mkdir -p _site
+          cp docs/index.html _site/
+          cp -r spec _site/
+          cp -r playground _site/
+          
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './spec'
+          path: './_site'
           
       - name: Deploy to GitHub Pages
         id: deployment

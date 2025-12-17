@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON-LD Frame to Schema Playground</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls label {
+            font-weight: 500;
+        }
+
+        .controls select {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .controls select:hover {
+            border-color: #667eea;
+        }
+
+        .status {
+            margin-left: auto;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status.loading {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status.ready {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .editor-panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .editor-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-btn {
+            padding: 0.4rem 0.8rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .copy-btn.copied {
+            background: #10b981;
+        }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 1rem;
+            border: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            background: #fafafa;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 4px;
+            border-left: 4px solid #dc2626;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .examples-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>JSON-LD Frame to Schema Playground</h1>
+            <p>Convert JSON-LD 1.1 Frames to JSON Schema in real-time</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <label for="exampleSelect">Load Example:</label>
+            <select id="exampleSelect">
+                <option value="">-- Select an example --</option>
+                <option value="basic">Basic Person</option>
+                <option value="nested">Nested Address</option>
+                <option value="array">Array of Friends</option>
+                <option value="explicit">Explicit Mode</option>
+                <option value="typed">Typed Properties</option>
+                <option value="embed">Non-Embedded Reference</option>
+            </select>
+            <span id="status" class="status loading" role="status" aria-live="polite">Loading Python environment...</span>
+        </div>
+
+        <div class="examples-info">
+            💡 <strong>Tip:</strong> Select an example from the dropdown above, or type your own JSON-LD frame in the left panel. The schema will update automatically.
+        </div>
+
+        <div class="editor-container">
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <span>JSON-LD Frame (Input)</span>
+                </div>
+                <textarea id="frameInput" placeholder="Enter your JSON-LD Frame here..." aria-label="JSON-LD Frame input"></textarea>
+            </div>
+
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <span>JSON Schema (Output)</span>
+                    <button id="copyBtn" class="copy-btn">Copy</button>
+                </div>
+                <textarea id="schemaOutput" readonly placeholder="Schema will appear here..." aria-label="JSON Schema output"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>
+            Created with <a href="https://github.com/jeswr/jsonldframe2schema" target="_blank">jsonldframe2schema</a> |
+            <a href="https://github.com/jeswr/jsonldframe2schema/blob/main/MAPPING.md" target="_blank">Mapping Specification</a> |
+            <a href="https://github.com/jeswr/jsonldframe2schema/blob/main/ALGORITHM.md" target="_blank">Algorithm</a>
+        </p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js" crossorigin="anonymous"></script>
+    <script>
+        let pyodide = null;
+        let conversionInProgress = false;
+
+        const examples = {
+            basic: {
+                "@context": {
+                    "xsd": "http://www.w3.org/2001/XMLSchema#",
+                    "name": "http://schema.org/name",
+                    "age": {
+                        "@id": "http://schema.org/age",
+                        "@type": "xsd:integer"
+                    }
+                },
+                "@type": "Person",
+                "name": {},
+                "age": {}
+            },
+            nested: {
+                "@type": "Person",
+                "@explicit": true,
+                "name": {},
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": {},
+                    "addressLocality": {},
+                    "postalCode": {}
+                }
+            },
+            array: {
+                "@type": "Person",
+                "name": {},
+                "knows": [{
+                    "@type": "Person",
+                    "name": {}
+                }]
+            },
+            explicit: {
+                "@type": "Person",
+                "@explicit": true,
+                "name": {},
+                "email": {}
+            },
+            typed: {
+                "@context": {
+                    "xsd": "http://www.w3.org/2001/XMLSchema#",
+                    "name": "http://schema.org/name",
+                    "birthDate": {
+                        "@id": "http://schema.org/birthDate",
+                        "@type": "xsd:date"
+                    },
+                    "height": {
+                        "@id": "http://schema.org/height",
+                        "@type": "xsd:float"
+                    }
+                },
+                "@type": "Person",
+                "name": {},
+                "birthDate": {},
+                "height": {}
+            },
+            embed: {
+                "@type": "Article",
+                "title": {},
+                "author": {
+                    "@embed": false,
+                    "@type": "Person"
+                }
+            }
+        };
+
+        const statusEl = document.getElementById('status');
+        const frameInput = document.getElementById('frameInput');
+        const schemaOutput = document.getElementById('schemaOutput');
+        const exampleSelect = document.getElementById('exampleSelect');
+        const copyBtn = document.getElementById('copyBtn');
+
+        function setStatus(message, type) {
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        async function initPyodide() {
+            try {
+                setStatus('Loading Python environment...', 'loading');
+                pyodide = await loadPyodide();
+                
+                setStatus('Installing dependencies...', 'loading');
+                await pyodide.loadPackage(['micropip']);
+                
+                const micropip = pyodide.pyimport('micropip');
+                await micropip.install('pyld');
+                await micropip.install('jsonschema');
+                
+                setStatus('Loading converter module...', 'loading');
+                
+                // Load the converter module directly
+                // NOTE: This embeds the FrameToSchemaConverter class from jsonldframe2schema/converter.py
+                // MAINTENANCE: When updating the main library, keep this embedded code in sync
+                await pyodide.runPythonAsync(`
+import json
+from typing import Any, Dict, List, Optional, Union
+import copy
+
+class FrameToSchemaConverter:
+    TYPE_MAPPINGS = {
+        "@id": {"type": "string", "format": "uri"},
+        "http://www.w3.org/2001/XMLSchema#string": {"type": "string"},
+        "http://www.w3.org/2001/XMLSchema#integer": {"type": "integer"},
+        "http://www.w3.org/2001/XMLSchema#int": {"type": "integer"},
+        "http://www.w3.org/2001/XMLSchema#long": {"type": "integer"},
+        "http://www.w3.org/2001/XMLSchema#boolean": {"type": "boolean"},
+        "http://www.w3.org/2001/XMLSchema#double": {"type": "number"},
+        "http://www.w3.org/2001/XMLSchema#float": {"type": "number"},
+        "http://www.w3.org/2001/XMLSchema#decimal": {"type": "number"},
+        "http://www.w3.org/2001/XMLSchema#dateTime": {"type": "string", "format": "date-time"},
+        "http://www.w3.org/2001/XMLSchema#date": {"type": "string", "format": "date"},
+        "http://www.w3.org/2001/XMLSchema#time": {"type": "string", "format": "time"},
+    }
+
+    FRAMING_KEYWORDS = {
+        "@context", "@embed", "@explicit", "@requireAll", "@omitDefault",
+        "@graph", "@reverse",
+    }
+
+    def __init__(self, schema_version="https://json-schema.org/draft/2020-12/schema", graph_only=False):
+        self.schema_version = schema_version
+        self.graph_only = graph_only
+
+    def convert(self, frame):
+        frame_content = frame
+        if "@graph" in frame:
+            graph_value = frame["@graph"]
+            if isinstance(graph_value, list) and len(graph_value) > 0:
+                frame_content = graph_value[0]
+            elif isinstance(graph_value, dict):
+                frame_content = graph_value
+            if "@context" not in frame_content and "@context" in frame:
+                frame_content = {"@context": frame["@context"], **frame_content}
+
+        graph_item_schema = {"type": "object"}
+        flags = self._extract_framing_flags(frame_content)
+        context = self._extract_context(frame_content)
+        self._process_frame_object(frame_content, graph_item_schema, flags, context)
+
+        if self.graph_only:
+            return {"$schema": self.schema_version, **graph_item_schema}
+
+        schema = {
+            "$schema": self.schema_version,
+            "type": "object",
+            "properties": {
+                "@context": {},
+                "@graph": {
+                    "type": "array",
+                    "items": graph_item_schema,
+                },
+            },
+            "required": ["@context", "@graph"],
+            "additionalProperties": True,
+        }
+        return schema
+
+    def _extract_framing_flags(self, frame):
+        return {
+            "embed": frame.get("@embed", True),
+            "explicit": frame.get("@explicit", False),
+            "requireAll": frame.get("@requireAll", False),
+            "omitDefault": frame.get("@omitDefault", False),
+        }
+
+    def _extract_context(self, frame):
+        context = frame.get("@context")
+        if not context:
+            return {}
+        return self._parse_context(context)
+
+    def _parse_context(self, context):
+        type_map = {}
+        if not context:
+            return type_map
+
+        try:
+            from pyld import jsonld
+            if isinstance(context, dict):
+                for key, value in context.items():
+                    if key.startswith("@"):
+                        continue
+                    if isinstance(value, str):
+                        continue
+                    if isinstance(value, dict) and "@type" in value:
+                        test_doc = {"@context": context, key: "test_value"}
+                        try:
+                            expanded = jsonld.expand(test_doc)
+                            if expanded and len(expanded) > 0:
+                                for prop_uri, prop_values in expanded[0].items():
+                                    if not prop_uri.startswith("@"):
+                                        if (prop_values and isinstance(prop_values, list) and 
+                                            len(prop_values) > 0 and isinstance(prop_values[0], dict)):
+                                            type_uri = prop_values[0].get("@type")
+                                            if type_uri:
+                                                type_map[key] = type_uri
+                                                break
+                        except Exception:
+                            type_map[key] = None
+                    elif isinstance(value, dict):
+                        type_map[key] = None
+            elif isinstance(context, list):
+                for ctx in context:
+                    type_map.update(self._parse_context(ctx))
+        except Exception:
+            pass
+
+        return type_map
+
+    def _process_frame_object(self, frame, schema, flags, context):
+        properties = {}
+        required = []
+
+        if "@type" in frame:
+            type_schema = self._process_type_constraint(frame["@type"])
+            properties["@type"] = type_schema
+            if not self._is_wildcard(frame["@type"]):
+                required.append("@type")
+
+        if "@id" in frame:
+            id_schema = self._process_id_constraint(frame["@id"])
+            properties["@id"] = id_schema
+            if not self._is_empty(frame["@id"]):
+                required.append("@id")
+
+        for key, value in frame.items():
+            if key in self.FRAMING_KEYWORDS:
+                continue
+            if key in ("@type", "@id"):
+                continue
+
+            prop_schema = self._process_property(key, value, flags, context)
+            properties[key] = prop_schema
+
+            if self._should_be_required(key, value, flags):
+                required.append(key)
+
+        if properties:
+            schema["properties"] = properties
+        if required:
+            schema["required"] = required
+
+        schema["additionalProperties"] = not flags["explicit"]
+
+    def _process_type_constraint(self, type_value):
+        if isinstance(type_value, str):
+            return {"const": type_value}
+        elif isinstance(type_value, list):
+            if len(type_value) == 0:
+                return {"type": "string"}
+            elif len(type_value) == 1:
+                return {"const": type_value[0]}
+            else:
+                return {"enum": type_value}
+        elif self._is_empty(type_value):
+            return {"type": "string"}
+        return {"type": "string"}
+
+    def _process_id_constraint(self, id_value):
+        if isinstance(id_value, str):
+            return {"const": id_value}
+        elif self._is_empty(id_value):
+            return {"type": "string", "format": "uri"}
+        elif isinstance(id_value, dict) and "@id" in id_value:
+            return self._process_id_constraint(id_value["@id"])
+        return {"type": "string", "format": "uri"}
+
+    def _process_property(self, key, value, flags, context):
+        context_type = context.get(key)
+
+        if self._is_empty(value):
+            return self._infer_type_from_context(key, context_type)
+        elif isinstance(value, (str, int, float, bool)):
+            return {"type": self._infer_json_type(value), "default": value}
+        elif isinstance(value, list):
+            return self._process_array_frame(value, flags, context)
+        elif isinstance(value, dict):
+            return self._process_nested_frame(value, flags, context)
+
+        return {}
+
+    def _infer_type_from_context(self, key, context_type):
+        if context_type is None:
+            return {"type": "string"}
+        if context_type in self.TYPE_MAPPINGS:
+            return copy.deepcopy(self.TYPE_MAPPINGS[context_type])
+        return {"type": "string"}
+
+    def _process_array_frame(self, array_value, flags, context):
+        if len(array_value) == 0:
+            return {"type": "array", "items": {}}
+
+        item_frame = array_value[0]
+        if isinstance(item_frame, dict):
+            item_schema = self._process_nested_frame(item_frame, flags, context)
+        else:
+            item_schema = {"type": self._infer_json_type(item_frame)}
+
+        return {"type": "array", "items": item_schema}
+
+    def _process_nested_frame(self, frame_obj, flags, context):
+        nested_flags = {
+            "embed": frame_obj.get("@embed", flags["embed"]),
+            "explicit": frame_obj.get("@explicit", flags["explicit"]),
+            "requireAll": frame_obj.get("@requireAll", flags["requireAll"]),
+            "omitDefault": frame_obj.get("@omitDefault", flags["omitDefault"]),
+        }
+
+        embed_value = nested_flags["embed"]
+        if embed_value is False or embed_value == "@never":
+            return {
+                "oneOf": [
+                    {"type": "string", "format": "uri"},
+                    {
+                        "type": "object",
+                        "properties": {"@id": {"type": "string", "format": "uri"}},
+                        "required": ["@id"],
+                        "additionalProperties": False,
+                    },
+                ]
+            }
+
+        nested_schema = {"type": "object"}
+        self._process_frame_object(frame_obj, nested_schema, nested_flags, context)
+        return nested_schema
+
+    def _should_be_required(self, key, value, flags):
+        if flags["requireAll"]:
+            return True
+        if flags["omitDefault"]:
+            return False
+        if self._is_empty(value):
+            return True
+        if isinstance(value, (dict, list)):
+            return True
+        return False
+
+    def _is_empty(self, value):
+        return isinstance(value, dict) and len(value) == 0
+
+    def _is_wildcard(self, value):
+        return self._is_empty(value) or (isinstance(value, list) and len(value) == 0)
+
+    def _infer_json_type(self, value):
+        if isinstance(value, bool):
+            return "boolean"
+        elif isinstance(value, int):
+            return "integer"
+        elif isinstance(value, float):
+            return "number"
+        elif isinstance(value, str):
+            return "string"
+        elif isinstance(value, list):
+            return "array"
+        elif isinstance(value, dict):
+            return "object"
+        elif value is None:
+            return "null"
+        return "string"
+
+# NOTE: The default is graph_only=True (different from the main library's default of False)
+# This provides simpler output for the playground UX by showing just the object schema
+# rather than wrapping it in @context and @graph properties.
+def frame_to_schema(frame, schema_version="https://json-schema.org/draft/2020-12/schema", graph_only=True):
+    converter = FrameToSchemaConverter(schema_version=schema_version, graph_only=graph_only)
+    return converter.convert(frame)
+
+def convert_frame_to_schema(frame_json):
+    try:
+        frame = json.loads(frame_json)
+        schema = frame_to_schema(frame)
+        return json.dumps(schema, indent=2)
+    except json.JSONDecodeError as e:
+        return json.dumps({"error": f"Invalid JSON: {str(e)}"})
+    except Exception as e:
+        return json.dumps({"error": f"{type(e).__name__}: {str(e)}"})
+`);
+                
+                setStatus('Ready', 'ready');
+                
+                // Load the first example
+                exampleSelect.value = 'basic';
+                loadExample('basic');
+            } catch (error) {
+                console.error('Failed to initialize Pyodide:', error);
+                setStatus('Failed to load', 'error');
+                schemaOutput.value = `Error: Failed to initialize Python environment\n${error.message}`;
+            }
+        }
+
+        async function convertFrame() {
+            if (!pyodide || conversionInProgress) return;
+            
+            const frameText = frameInput.value.trim();
+            if (!frameText) {
+                schemaOutput.value = '';
+                return;
+            }
+
+            try {
+                conversionInProgress = true;
+                setStatus('Converting...', 'loading');
+                
+                pyodide.globals.set('frame_json', frameText);
+                const result = await pyodide.runPythonAsync('convert_frame_to_schema(frame_json)');
+                
+                const resultObj = JSON.parse(result);
+                if (resultObj.error) {
+                    schemaOutput.value = `Error: ${resultObj.error}`;
+                    setStatus('Conversion error', 'error');
+                } else {
+                    schemaOutput.value = JSON.stringify(resultObj, null, 2);
+                    setStatus('Ready', 'ready');
+                }
+            } catch (error) {
+                console.error('Conversion error:', error);
+                schemaOutput.value = `Error: ${error.message}`;
+                setStatus('Conversion error', 'error');
+            } finally {
+                conversionInProgress = false;
+            }
+        }
+
+        function loadExample(exampleKey) {
+            if (!exampleKey || !examples[exampleKey]) return;
+            frameInput.value = JSON.stringify(examples[exampleKey], null, 2);
+            convertFrame();
+        }
+
+        // Event listeners
+        let debounceTimer;
+        frameInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(convertFrame, 500);
+        });
+
+        exampleSelect.addEventListener('change', (e) => {
+            loadExample(e.target.value);
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(schemaOutput.value);
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (error) {
+                console.error('Failed to copy:', error);
+                copyBtn.textContent = 'Failed to copy';
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                }, 2000);
+            }
+        });
+
+        // Initialize on page load
+        initPyodide();
+    </script>
+</body>
+</html>

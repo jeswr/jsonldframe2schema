@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jsonldframe2schema - JSON-LD Frame to Schema Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            margin-bottom: 3rem;
+        }
+
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: white;
+            color: #333;
+            padding: 2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+
+        .card-description {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            opacity: 0.9;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+            transition: border-color 0.2s;
+        }
+
+        .footer a:hover {
+            border-bottom-color: white;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .links {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>jsonldframe2schema</h1>
+        <p class="subtitle">Convert JSON-LD 1.1 Frames to JSON Schema</p>
+
+        <div class="links">
+            <a href="playground/" class="card" aria-label="Open Web Playground">
+                <div class="card-icon">🎮</div>
+                <div class="card-title">Web Playground</div>
+                <div class="card-description">
+                    Try it out! Convert frames to schemas in real-time directly in your browser
+                </div>
+            </a>
+
+            <a href="spec/" class="card" aria-label="Open Specification">
+                <div class="card-icon">📖</div>
+                <div class="card-title">Specification</div>
+                <div class="card-description">
+                    Read the formal specification and algorithm documentation
+                </div>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>
+                <a href="https://github.com/jeswr/jsonldframe2schema" target="_blank">View on GitHub</a> •
+                <a href="https://github.com/jeswr/jsonldframe2schema/blob/main/README.md" target="_blank">Documentation</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
