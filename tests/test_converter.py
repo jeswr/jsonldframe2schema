@@ -309,6 +309,104 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIn("optional", graph_items["properties"])
 
 
+class TestNewFeatures(unittest.TestCase):
+    """Tests for newly implemented features like @reverse, value objects, etc."""
+
+    def test_reverse_property(self):
+        """Test @reverse property creates proper schema."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Person",
+            "name": {},
+            "@reverse": {
+                "author": {"@type": "Book", "title": {}}
+            },
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that @reverse property exists
+        self.assertIn("@reverse", schema["properties"])
+        reverse_schema = schema["properties"]["@reverse"]
+        self.assertEqual(reverse_schema["type"], "object")
+        self.assertIn("properties", reverse_schema)
+
+        # Check that author property allows single or array
+        self.assertIn("author", reverse_schema["properties"])
+        author_schema = reverse_schema["properties"]["author"]
+        self.assertIn("oneOf", author_schema)
+        self.assertEqual(len(author_schema["oneOf"]), 2)
+
+        # First option should be object with Book type
+        single_option = author_schema["oneOf"][0]
+        self.assertEqual(single_option["type"], "object")
+        self.assertIn("properties", single_option)
+        self.assertIn("@type", single_option["properties"])
+        self.assertEqual(single_option["properties"]["@type"]["const"], "Book")
+
+        # Second option should be array of Book objects
+        array_option = author_schema["oneOf"][1]
+        self.assertEqual(array_option["type"], "array")
+        self.assertIn("items", array_option)
+        self.assertEqual(array_option["items"]["type"], "object")
+
+    def test_reverse_property_required(self):
+        """Test that @reverse property is marked as required."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Person",
+            "@reverse": {"author": {"@type": "Book"}},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # @reverse should be required when specified in frame
+        self.assertIn("required", schema)
+        self.assertIn("@reverse", schema["required"])
+
+    def test_value_object_with_language(self):
+        """Test value object frame with @language constraint."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Person",
+            "name": {"@value": {}, "@language": "en"},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that name property allows string or value object
+        self.assertIn("name", schema["properties"])
+        name_schema = schema["properties"]["name"]
+        self.assertIn("oneOf", name_schema)
+        self.assertEqual(len(name_schema["oneOf"]), 2)
+
+        # First option should be simple string
+        self.assertEqual(name_schema["oneOf"][0]["type"], "string")
+
+        # Second option should be value object with language constraint
+        value_obj = name_schema["oneOf"][1]
+        self.assertEqual(value_obj["type"], "object")
+        self.assertIn("@value", value_obj["properties"])
+        self.assertIn("@language", value_obj["properties"])
+        self.assertEqual(value_obj["properties"]["@language"]["const"], "en")
+
+    def test_value_object_with_type(self):
+        """Test value object frame with @type constraint."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Article",
+            "datePublished": {"@value": {}, "@type": "xsd:date"},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that datePublished allows string or typed value object
+        self.assertIn("datePublished", schema["properties"])
+        date_schema = schema["properties"]["datePublished"]
+        self.assertIn("oneOf", date_schema)
+
+        # Second option should have @type constraint
+        value_obj = date_schema["oneOf"][1]
+        self.assertIn("@type", value_obj["properties"])
+        self.assertEqual(value_obj["properties"]["@type"]["const"], "xsd:date")
+
+
 class TestAllPredefinedCases(unittest.TestCase):
     """Run all predefined test cases as a batch."""
 

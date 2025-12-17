@@ -261,6 +261,12 @@ class FrameToSchemaConverter:
             if not self._is_empty(frame["@id"]):
                 required.append("@id")
 
+        # Process @reverse constraint
+        if "@reverse" in frame:
+            reverse_schema = self._process_reverse_property(frame["@reverse"], flags, context)
+            properties["@reverse"] = reverse_schema
+            required.append("@reverse")
+
         # Process regular properties
         for key, value in frame.items():
             if key in self.FRAMING_KEYWORDS:
@@ -367,6 +373,9 @@ class FrameToSchemaConverter:
             # Array frame
             return self._process_array_frame(value, flags, context)
         elif isinstance(value, dict):
+            # Check if this is a value object frame
+            if "@value" in value:
+                return self._process_value_object_frame(value, flags, context)
             # Nested object frame
             return self._process_nested_frame(value, flags, context)
 
@@ -470,6 +479,90 @@ class FrameToSchemaConverter:
         self._process_frame_object(frame_obj, nested_schema, nested_flags, context)
 
         return nested_schema
+
+    def _process_reverse_property(
+        self,
+        reverse_obj: Dict[str, Any],
+        flags: Dict[str, Any],
+        context: Dict[str, Optional[str]],
+    ) -> Dict[str, Any]:
+        """
+        Process @reverse frame property.
+
+        Args:
+            reverse_obj: The @reverse object from the frame
+            flags: Framing flags
+            context: Type context mapping
+
+        Returns:
+            JSON Schema for reverse property definition
+        """
+        reverse_schema: Dict[str, Any] = {"type": "object", "properties": {}}
+
+        for prop_name, prop_frame in reverse_obj.items():
+            # Process the nested frame for this reverse property
+            prop_schema = self._process_nested_frame(prop_frame, flags, context)
+
+            # Allow single object or array of objects
+            reverse_schema["properties"][prop_name] = {
+                "oneOf": [
+                    prop_schema,
+                    {"type": "array", "items": prop_schema},
+                ]
+            }
+
+        return reverse_schema
+
+    def _process_value_object_frame(
+        self,
+        value_frame: Dict[str, Any],
+        flags: Dict[str, Any],
+        context: Dict[str, Optional[str]],
+    ) -> Dict[str, Any]:
+        """
+        Process value object frame (contains @value, @language, or @type).
+
+        Args:
+            value_frame: Frame containing value object pattern
+            flags: Framing flags
+            context: Type context mapping
+
+        Returns:
+            JSON Schema that allows string OR value object
+        """
+        schemas = []
+
+        # Allow simple string value
+        schemas.append({"type": "string"})
+
+        # Build value object schema
+        value_obj_schema: Dict[str, Any] = {
+            "type": "object",
+            "properties": {"@value": {}},
+            "required": ["@value"],
+        }
+
+        # Handle @language constraint
+        if "@language" in value_frame:
+            lang = value_frame["@language"]
+            if isinstance(lang, str):
+                # Specific language required
+                value_obj_schema["properties"]["@language"] = {"const": lang}
+            elif self._is_empty(lang):
+                # Any language allowed
+                value_obj_schema["properties"]["@language"] = {"type": "string"}
+
+        # Handle @type constraint for typed literals
+        if "@type" in value_frame:
+            type_val = value_frame["@type"]
+            if isinstance(type_val, str):
+                value_obj_schema["properties"]["@type"] = {"const": type_val}
+            elif self._is_empty(type_val):
+                value_obj_schema["properties"]["@type"] = {"type": "string"}
+
+        schemas.append(value_obj_schema)
+
+        return {"oneOf": schemas}
 
     def _should_be_required(self, key: str, value: Any, flags: Dict[str, Any]) -> bool:
         """
