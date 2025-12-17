@@ -50,6 +50,9 @@ class FrameToSchemaConverter:
         "@reverse",
     }
 
+    # Prefix used to mark container types in context map
+    CONTAINER_PREFIX = "@container:"
+
     def __init__(
         self,
         schema_version: str = "https://json-schema.org/draft/2020-12/schema",
@@ -194,7 +197,7 @@ class FrameToSchemaConverter:
                     if isinstance(value, dict) and "@container" in value:
                         # Store container type with special prefix
                         container_type = value["@container"]
-                        type_map[key] = f"@container:{container_type}"
+                        type_map[key] = f"{self.CONTAINER_PREFIX}{container_type}"
                     # Check if this property definition has type coercion
                     elif isinstance(value, dict) and "@type" in value:
                         # Use pyld.expand() to resolve the type URI
@@ -425,18 +428,22 @@ class FrameToSchemaConverter:
             return {"type": "string"}
 
         # Check if this is a container specification
-        if context_type.startswith("@container:"):
-            container_type = context_type.replace("@container:", "")
+        if context_type.startswith(self.CONTAINER_PREFIX):
+            # Extract container type using structured approach
+            container_type = context_type[len(self.CONTAINER_PREFIX):]
             
             if container_type == "@language":
                 # Language map: allows string or object with language codes as keys
+                # BCP 47 language tags: language[-script][-region][-variant][-extension][-privateuse]
+                # This pattern is more permissive to handle common cases
                 return {
                     "oneOf": [
                         {"type": "string"},
                         {
                             "type": "object",
                             "patternProperties": {
-                                "^[a-z]{2}(-[A-Z]{2})?$": {"type": "string"}
+                                # Matches: en, en-US, zh-Hans-CN, etc.
+                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?(-[a-z0-9]+)*$": {"type": "string"}
                             },
                             "additionalProperties": False,
                         },
@@ -537,39 +544,6 @@ class FrameToSchemaConverter:
         self._process_frame_object(frame_obj, nested_schema, nested_flags, context)
 
         return nested_schema
-
-    def _process_reverse_property(
-        self,
-        reverse_obj: Dict[str, Any],
-        flags: Dict[str, Any],
-        context: Dict[str, Optional[str]],
-    ) -> Dict[str, Any]:
-        """
-        Process @reverse frame property.
-
-        Args:
-            reverse_obj: The @reverse object from the frame
-            flags: Framing flags
-            context: Type context mapping
-
-        Returns:
-            JSON Schema for reverse property definition
-        """
-        reverse_schema: Dict[str, Any] = {"type": "object", "properties": {}}
-
-        for prop_name, prop_frame in reverse_obj.items():
-            # Process the nested frame for this reverse property
-            prop_schema = self._process_nested_frame(prop_frame, flags, context)
-
-            # Allow single object or array of objects
-            reverse_schema["properties"][prop_name] = {
-                "oneOf": [
-                    prop_schema,
-                    {"type": "array", "items": prop_schema},
-                ]
-            }
-
-        return reverse_schema
 
     def _process_value_object_frame(
         self,
