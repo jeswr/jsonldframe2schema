@@ -28,10 +28,12 @@ class TestPlaygroundE2E(unittest.TestCase):
         self.assertIn('<meta name="viewport"', self.html_content)
 
         # Check for title
-        self.assertIn('<title>JSON-LD Frame to Schema Playground</title>', self.html_content)
+        self.assertIn(
+            "<title>JSON-LD Frame to Schema Playground</title>", self.html_content
+        )
 
         # Check for main header
-        self.assertIn('<h1>JSON-LD Frame to Schema Playground</h1>', self.html_content)
+        self.assertIn("<h1>JSON-LD Frame to Schema Playground</h1>", self.html_content)
 
     def test_accessibility_attributes_present(self):
         """Test that accessibility attributes are present."""
@@ -63,7 +65,7 @@ class TestPlaygroundE2E(unittest.TestCase):
     def test_pyodide_script_tag_present(self):
         """Test that Pyodide script is loaded."""
         # Check for Pyodide CDN script
-        self.assertIn('pyodide/v0.26.4/full/pyodide.js', self.html_content)
+        self.assertIn("pyodide/v0.26.4/full/pyodide.js", self.html_content)
 
         # Check for crossorigin attribute for security
         self.assertIn('crossorigin="anonymous"', self.html_content)
@@ -71,41 +73,43 @@ class TestPlaygroundE2E(unittest.TestCase):
     def test_example_frames_defined(self):
         """Test that example frames are defined in JavaScript."""
         # Check for examples object
-        self.assertIn('const examples = {', self.html_content)
+        self.assertIn("const examples = {", self.html_content)
 
         # Check for specific examples
-        required_examples = ['basic', 'nested', 'array', 'explicit', 'typed', 'embed']
+        required_examples = ["basic", "nested", "array", "explicit", "typed", "embed"]
         for example in required_examples:
-            self.assertIn(f'{example}:', self.html_content)
+            self.assertIn(f"{example}:", self.html_content)
 
     def test_javascript_functions_defined(self):
         """Test that required JavaScript functions are defined."""
         required_functions = [
-            'initPyodide',
-            'convertFrame',
-            'loadExample',
-            'setStatus',
+            "initPyodide",
+            "convertFrame",
+            "loadExample",
+            "setStatus",
         ]
 
         for func in required_functions:
             # Check for function definition (async or regular)
-            pattern = f'(async )?function {func}|{func} = (async )?function|(async )?{func} ='
+            pattern = (
+                f"(async )?function {func}|{func} = (async )?function|(async )?{func} ="
+            )
             self.assertTrue(
                 re.search(pattern, self.html_content),
-                f"Function '{func}' not found in HTML"
+                f"Function '{func}' not found in HTML",
             )
 
     def test_python_converter_class_embedded(self):
         """Test that the Python converter class is embedded."""
         # Check for FrameToSchemaConverter class
-        self.assertIn('class FrameToSchemaConverter:', self.html_content)
+        self.assertIn("class FrameToSchemaConverter:", self.html_content)
 
         # Check for key methods
         required_methods = [
-            'def convert',
-            'def _extract_framing_flags',
-            'def _process_frame_object',
-            'def _process_property',
+            "def convert",
+            "def _extract_framing_flags",
+            "def _process_frame_object",
+            "def _process_property",
         ]
 
         for method in required_methods:
@@ -114,7 +118,7 @@ class TestPlaygroundE2E(unittest.TestCase):
     def test_error_handling_present(self):
         """Test that error handling is implemented."""
         # Check for Exception handling (not bare except)
-        self.assertIn('except Exception:', self.html_content)
+        self.assertIn("except Exception:", self.html_content)
 
         # Check for copy failure feedback
         self.assertIn("'Failed to copy'", self.html_content)
@@ -133,42 +137,45 @@ class TestPlaygroundE2E(unittest.TestCase):
     def test_css_styles_present(self):
         """Test that CSS styles are defined."""
         # Check for basic styles
-        self.assertIn('<style>', self.html_content)
-        self.assertIn('</style>', self.html_content)
+        self.assertIn("<style>", self.html_content)
+        self.assertIn("</style>", self.html_content)
 
         # Check for responsive design
-        self.assertIn('@media', self.html_content)
+        self.assertIn("@media", self.html_content)
 
     def test_no_inline_event_handlers(self):
         """Test that no inline event handlers are used (security best practice)."""
         # Check for common inline handlers
-        inline_handlers = ['onclick=', 'onload=', 'onerror=', 'onchange=']
+        inline_handlers = ["onclick=", "onload=", "onerror=", "onchange="]
 
         for handler in inline_handlers:
-            self.assertNotIn(handler, self.html_content.lower(),
-                             f"Inline event handler '{handler}' found (security risk)")
+            self.assertNotIn(
+                handler,
+                self.html_content.lower(),
+                f"Inline event handler '{handler}' found (security risk)",
+            )
 
     def test_conversion_function_structure(self):
         """Test that the conversion function has proper structure."""
         # Check for frame_to_schema Python function
-        self.assertIn('def frame_to_schema(', self.html_content)
+        self.assertIn("def frame_to_schema(", self.html_content)
 
         # Check for convert_frame_to_schema wrapper
-        self.assertIn('def convert_frame_to_schema(', self.html_content)
+        self.assertIn("def convert_frame_to_schema(", self.html_content)
 
         # Check for graph_only parameter with comment
-        self.assertIn('graph_only=True', self.html_content)
+        self.assertIn("graph_only=True", self.html_content)
 
     def test_footer_links_present(self):
         """Test that footer links are present."""
         # Check for GitHub repository link
-        self.assertIn('github.com/jeswr/jsonldframe2schema', self.html_content)
+        self.assertIn("github.com/jeswr/jsonldframe2schema", self.html_content)
 
         # Check for MAPPING.md link
-        self.assertIn('MAPPING.md', self.html_content)
+        self.assertIn("MAPPING.md", self.html_content)
 
         # Check for ALGORITHM.md link
-        self.assertIn('ALGORITHM.md', self.html_content)
+        self.assertIn("ALGORITHM.md", self.html_content)
 
 
 class TestDocsIndexE2E(unittest.TestCase):
@@ -184,10 +191,10 @@ class TestDocsIndexE2E(unittest.TestCase):
     def test_landing_page_structure(self):
         """Test that the landing page has proper structure."""
         # Check for title
-        self.assertIn('jsonldframe2schema', self.html_content)
+        self.assertIn("jsonldframe2schema", self.html_content)
 
         # Check for main heading
-        self.assertIn('<h1>jsonldframe2schema</h1>', self.html_content)
+        self.assertIn("<h1>jsonldframe2schema</h1>", self.html_content)
 
     def test_card_links_present(self):
         """Test that card links to playground and spec are present."""
@@ -222,7 +229,8 @@ def run_tests():
     return result.wasSuccessful()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     success = run_tests()
     sys.exit(0 if success else 1)
