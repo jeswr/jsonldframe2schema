@@ -154,23 +154,50 @@
       <p>The main conversion function takes a <a>frame</a> and returns a <a>schema</a>.</p>
       
       <pre class="algorithm">
-<dfn>frameToSchema</dfn>(<var>frame</var>, <var>schemaVersion</var>)
+<dfn>frameToSchema</dfn>(<var>frame</var>, <var>schemaVersion</var>, <var>graphOnly</var>)
 
 Arguments:
   <var>frame</var>: A JSON-LD Frame object
   <var>schemaVersion</var>: JSON Schema version URI (optional, defaults to Draft 2020-12)
+  <var>graphOnly</var>: Boolean flag to output only the schema for @graph items (optional, defaults to false)
 
 Returns:
   A JSON Schema document
 
 Steps:
-  1. Let <var>schema</var> be a new object
-  2. Set <var>schema</var>["$schema"] to <var>schemaVersion</var>
-  3. Set <var>schema</var>["type"] to "object"
-  4. Let <var>flags</var> be the result of calling <a>extractFramingFlags</a>(<var>frame</var>)
-  5. Let <var>context</var> be the result of calling <a>extractContext</a>(<var>frame</var>)
-  6. Call <a>processFrameObject</a>(<var>frame</var>, <var>schema</var>, <var>flags</var>, <var>context</var>)
-  7. Return <var>schema</var>
+  1. Let <var>frameContent</var> be <var>frame</var>
+  2. If <var>frame</var>["@graph"] exists:
+     1. Let <var>graphValue</var> be <var>frame</var>["@graph"]
+     2. If <var>graphValue</var> is an array and its length is greater than 0:
+        1. Set <var>frameContent</var> to <var>graphValue</var>[0]
+     3. Else if <var>graphValue</var> is an object:
+        1. Set <var>frameContent</var> to <var>graphValue</var>
+     4. If <var>frameContent</var>["@context"] does not exist and <var>frame</var>["@context"] exists:
+        1. Create a new object merging <var>frame</var>["@context"] with <var>frameContent</var>
+        2. Set <var>frameContent</var> to this merged object
+  3. Let <var>graphItemSchema</var> be a new object
+  4. Set <var>graphItemSchema</var>["type"] to "object"
+  5. Let <var>flags</var> be the result of calling <a>extractFramingFlags</a>(<var>frameContent</var>)
+  6. Let <var>context</var> be the result of calling <a>extractContext</a>(<var>frameContent</var>)
+  7. Call <a>processFrameObject</a>(<var>frameContent</var>, <var>graphItemSchema</var>, <var>flags</var>, <var>context</var>)
+  8. If <var>graphOnly</var> is true:
+     1. Let <var>schema</var> be a new object
+     2. Set <var>schema</var>["$schema"] to <var>schemaVersion</var>
+     3. Merge all properties from <var>graphItemSchema</var> into <var>schema</var>
+     4. Return <var>schema</var>
+  9. Let <var>schema</var> be a new object
+  10. Set <var>schema</var>["$schema"] to <var>schemaVersion</var>
+  11. Set <var>schema</var>["type"] to "object"
+  12. Let <var>properties</var> be a new object
+  13. Set <var>properties</var>["@context"] to an empty object
+  14. Let <var>graphProperty</var> be a new object
+  15. Set <var>graphProperty</var>["type"] to "array"
+  16. Set <var>graphProperty</var>["items"] to <var>graphItemSchema</var>
+  17. Set <var>properties</var>["@graph"] to <var>graphProperty</var>
+  18. Set <var>schema</var>["properties"] to <var>properties</var>
+  19. Set <var>schema</var>["required"] to ["@context", "@graph"]
+  20. Set <var>schema</var>["additionalProperties"] to true
+  21. Return <var>schema</var>
       </pre>
     </section>
 
@@ -538,18 +565,29 @@ Steps:
 }
       </pre>
       
-      <p>The algorithm produces the following schema:</p>
+      <p>The algorithm produces the following schema (default behavior with <code>graphOnly=false</code>):</p>
       
       <pre class="example json" title="Generated Schema">
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": { "const": "Person" },
-    "name": { "type": "string" },
-    "age": { "type": "integer" }
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": { "const": "Person" },
+          "name": { "type": "string" },
+          "age": { "type": "integer" }
+        },
+        "required": ["@type", "name", "age"],
+        "additionalProperties": true
+      }
+    }
   },
-  "required": ["@type", "name", "age"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }
       </pre>
@@ -573,28 +611,39 @@ Steps:
 }
       </pre>
       
-      <p>The algorithm produces:</p>
+      <p>The algorithm produces (default behavior with <code>graphOnly=false</code>):</p>
       
       <pre class="example json" title="Generated Schema with Nested Objects">
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": { "const": "Person" },
-    "name": { "type": "string" },
-    "address": {
-      "type": "object",
-      "properties": {
-        "@type": { "const": "PostalAddress" },
-        "streetAddress": { "type": "string" },
-        "addressLocality": { "type": "string" }
-      },
-      "required": ["@type", "streetAddress", "addressLocality"],
-      "additionalProperties": true
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": { "const": "Person" },
+          "name": { "type": "string" },
+          "address": {
+            "type": "object",
+            "properties": {
+              "@type": { "const": "PostalAddress" },
+              "streetAddress": { "type": "string" },
+              "addressLocality": { "type": "string" }
+            },
+            "required": ["@type", "streetAddress", "addressLocality"],
+            "additionalProperties": true
+          }
+        },
+        "required": ["@type", "name", "address"],
+        "additionalProperties": false
+      }
     }
   },
-  "required": ["@type", "name", "address"],
-  "additionalProperties": false
+  "required": ["@context", "@graph"],
+  "additionalProperties": true
 }
       </pre>
     </section>
@@ -615,30 +664,41 @@ Steps:
 }
       </pre>
       
-      <p>The algorithm produces a schema that accepts either a URI string or an object with just an @id:</p>
+      <p>The algorithm produces a schema that accepts either a URI string or an object with just an @id (default behavior with <code>graphOnly=false</code>):</p>
       
       <pre class="example json" title="Schema for Non-Embedded References">
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": { "const": "Article" },
-    "title": { "type": "string" },
-    "author": {
-      "oneOf": [
-        { "type": "string", "format": "uri" },
-        {
-          "type": "object",
-          "properties": {
-            "@id": { "type": "string", "format": "uri" }
-          },
-          "required": ["@id"],
-          "additionalProperties": false
-        }
-      ]
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": { "const": "Article" },
+          "title": { "type": "string" },
+          "author": {
+            "oneOf": [
+              { "type": "string", "format": "uri" },
+              {
+                "type": "object",
+                "properties": {
+                  "@id": { "type": "string", "format": "uri" }
+                },
+                "required": ["@id"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": ["@type", "title", "author"],
+        "additionalProperties": true
+      }
     }
   },
-  "required": ["@type", "title", "author"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }
       </pre>
@@ -660,29 +720,40 @@ Steps:
 }
       </pre>
       
-      <p>Generates an array schema:</p>
+      <p>Generates an array schema (default behavior with <code>graphOnly=false</code>):</p>
       
       <pre class="example json" title="Schema with Array">
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "@type": { "const": "Person" },
-    "name": { "type": "string" },
-    "knows": {
+    "@context": {},
+    "@graph": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
           "@type": { "const": "Person" },
-          "name": { "type": "string" }
+          "name": { "type": "string" },
+          "knows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "@type": { "const": "Person" },
+                "name": { "type": "string" }
+              },
+              "required": ["@type", "name"],
+              "additionalProperties": true
+            }
+          }
         },
-        "required": ["@type", "name"],
+        "required": ["@type", "name", "knows"],
         "additionalProperties": true
       }
     }
   },
-  "required": ["@type", "name", "knows"],
+  "required": ["@context", "@graph"],
   "additionalProperties": true
 }
       </pre>
