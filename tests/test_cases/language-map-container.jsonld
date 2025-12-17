@@ -1,0 +1,12 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "description": {
+      "@id": "http://schema.org/description",
+      "@container": "@language"
+    }
+  },
+  "@type": "Product",
+  "name": {},
+  "description": {}
+}

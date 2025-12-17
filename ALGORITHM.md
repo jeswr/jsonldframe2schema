@@ -98,14 +98,19 @@ function extractContext(frame):
     return {}
 
 function parseContext(context):
-    // Parse JSON-LD context to extract type coercion information
+    // Parse JSON-LD context to extract type coercion and container information
     // This can use existing JSON-LD libraries
     typeMap = {}
     
     if isObject(context):
         for key, value in context:
             if key != "@vocab" and key != "@base":
-                if isObject(value) and "@type" in value:
+                // Check for @container directive (takes precedence for schema generation)
+                if isObject(value) and "@container" in value:
+                    containerType = value["@container"]
+                    typeMap[key] = "@container:" + containerType
+                // Check for @type coercion
+                else if isObject(value) and "@type" in value:
                     typeMap[key] = value["@type"]
     
     return typeMap
@@ -233,10 +238,73 @@ function processProperty(key, value, flags, context):
         return processArrayFrame(value, flags, context)
     
     else if isObject(value):
+        // Check if this is a value object frame
+        if isValueObjectFrame(value):
+            return processValueObjectFrame(value, flags, context)
         // Nested object frame
         return processNestedFrame(value, flags, context)
     
     return {}
+```
+
+### 6a. Check if Value Object Frame
+
+```
+function isValueObjectFrame(value):
+    // A value object frame must have @value AND (@language OR @type)
+    if "@value" not in value:
+        return false
+    
+    // Only treat as value object frame if @language or @type is present
+    if "@language" in value or "@type" in value:
+        return true
+    
+    return false
+```
+
+### 6b. Process Value Object Frame
+
+```
+function processValueObjectFrame(valueFrame, flags, context):
+    // Value object frames allow string OR structured value object
+    schemas = []
+    
+    // Allow simple string value
+    schemas.append({ "type": "string" })
+    
+    // Build value object schema
+    valueObjSchema = {
+        "type": "object",
+        "properties": { "@value": {} },
+        "required": ["@value"],
+        "additionalProperties": false
+    }
+    
+    // Handle @language constraint
+    if "@language" in valueFrame:
+        lang = valueFrame["@language"]
+        if isString(lang):
+            // Specific language required
+            valueObjSchema["properties"]["@language"] = { "const": lang }
+            valueObjSchema["required"].append("@language")
+        else if isEmpty(lang):
+            // Any language allowed
+            valueObjSchema["properties"]["@language"] = { "type": "string" }
+            valueObjSchema["required"].append("@language")
+    
+    // Handle @type constraint for typed literals
+    if "@type" in valueFrame:
+        typeVal = valueFrame["@type"]
+        if isString(typeVal):
+            valueObjSchema["properties"]["@type"] = { "const": typeVal }
+            valueObjSchema["required"].append("@type")
+        else if isEmpty(typeVal):
+            valueObjSchema["properties"]["@type"] = { "type": "string" }
+            valueObjSchema["required"].append("@type")
+    
+    schemas.append(valueObjSchema)
+    
+    return { "oneOf": schemas }
 ```
 
 ### 7. Infer Type from Context
@@ -245,6 +313,44 @@ function processProperty(key, value, flags, context):
 function inferTypeFromContext(key, contextType):
     if contextType == null:
         return { "type": "string" }
+    
+    // Check if this is a container specification
+    if contextType.startsWith("@container:"):
+        containerType = contextType.substring(11)  // Remove "@container:" prefix
+        
+        if containerType == "@language":
+            // Language map with BCP 47 language tags
+            return {
+                "oneOf": [
+                    { "type": "string" },
+                    {
+                        "type": "object",
+                        "patternProperties": {
+                            // Matches: en, en-US, es-419, zh-Hans-CN, etc.
+                            "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2}|-[0-9]{3})?(-[a-z0-9]+)*$": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                    }
+                ]
+            }
+        
+        else if containerType == "@index":
+            // Index container: object with arbitrary keys
+            return {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+            }
+        
+        else if containerType == "@set":
+            // Set container: array with unique items
+            return {
+                "type": "array",
+                "uniqueItems": true
+            }
+        
+        else if containerType == "@list":
+            // List container: ordered array
+            return { "type": "array" }
     
     // Map JSON-LD types to JSON Schema types
     typeMapping = {
@@ -500,6 +606,166 @@ function inferJsonType(value):
   },
   "required": ["@type", "name", "address"],
   "additionalProperties": false
+}
+```
+
+### Example 3: Value Object with Language Tag
+
+**Input Frame:**
+```json
+{
+  "@context": {
+    "@vocab": "http://schema.org/"
+  },
+  "@type": "Article",
+  "headline": {
+    "@value": {},
+    "@language": "en"
+  }
+}
+```
+
+**Algorithm Execution:**
+
+1. Extract flags: `{embed: true, explicit: false, requireAll: false, omitDefault: false}`
+2. Extract context: `{}`
+3. Process @type: Creates `"@type": {"const": "Article"}`
+4. Process "headline": Detects value object frame (has @value + @language)
+   - Creates oneOf with string and value object schema
+   - Value object requires both @value and @language
+   - Sets additionalProperties: false for strict validation
+
+**Output Schema (with graphOnly=true):**
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": {"const": "Article"},
+    "headline": {
+      "oneOf": [
+        {"type": "string"},
+        {
+          "type": "object",
+          "properties": {
+            "@value": {},
+            "@language": {"const": "en"}
+          },
+          "required": ["@value", "@language"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": ["@type", "headline"],
+  "additionalProperties": true
+}
+```
+
+### Example 4: Language Map Container
+
+**Input Frame:**
+```json
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "description": {
+      "@id": "http://schema.org/description",
+      "@container": "@language"
+    }
+  },
+  "@type": "Product",
+  "name": {},
+  "description": {}
+}
+```
+
+**Algorithm Execution:**
+
+1. Extract flags: `{embed: true, explicit: false, requireAll: false, omitDefault: false}`
+2. Extract context: `{description: "@container:@language"}`
+3. Process @type: Creates `"@type": {"const": "Product"}`
+4. Process "name": Creates `"name": {"type": "string"}`
+5. Process "description": Detects @container:@language from context
+   - Creates oneOf with string and language map object
+   - Language map uses patternProperties with BCP 47 regex
+   - Supports language codes like: en, en-US, es-419, zh-Hans-CN
+
+**Output Schema (with graphOnly=true):**
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": {"const": "Product"},
+    "name": {"type": "string"},
+    "description": {
+      "oneOf": [
+        {"type": "string"},
+        {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2}|-[0-9]{3})?(-[a-z0-9]+)*$": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": ["@type", "name", "description"],
+  "additionalProperties": true
+}
+```
+
+### Example 5: Set and Index Containers
+
+**Input Frame:**
+```json
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "keywords": {
+      "@id": "http://schema.org/keywords",
+      "@container": "@set"
+    },
+    "metadata": {
+      "@id": "http://schema.org/metadata",
+      "@container": "@index"
+    }
+  },
+  "@type": "BlogPost",
+  "keywords": {},
+  "metadata": {}
+}
+```
+
+**Algorithm Execution:**
+
+1. Extract flags: `{embed: true, explicit: false, requireAll: false, omitDefault: false}`
+2. Extract context: `{keywords: "@container:@set", metadata: "@container:@index"}`
+3. Process "keywords": Creates array with uniqueItems: true
+4. Process "metadata": Creates object with additionalProperties for arbitrary keys
+
+**Output Schema (with graphOnly=true):**
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": {"const": "BlogPost"},
+    "keywords": {
+      "type": "array",
+      "uniqueItems": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    }
+  },
+  "required": ["@type", "keywords", "metadata"],
+  "additionalProperties": true
 }
 ```
 

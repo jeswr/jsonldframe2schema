@@ -1,0 +1,12 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "itemListElement": {
+      "@id": "http://schema.org/itemListElement",
+      "@container": "@list"
+    }
+  },
+  "@type": "ItemList",
+  "name": {},
+  "itemListElement": {}
+}

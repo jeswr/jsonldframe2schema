@@ -1,0 +1,14 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/"
+  },
+  "@type": "Article",
+  "headline": {
+    "@value": {},
+    "@language": "en"
+  },
+  "alternativeHeadline": {
+    "@value": {},
+    "@language": {}
+  }
+}

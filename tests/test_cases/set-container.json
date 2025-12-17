@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@context": {},
+    "@graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": {
+            "const": "Article"
+          },
+          "name": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": ["@type", "name", "keywords"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["@context", "@graph"],
+  "additionalProperties": true
+}

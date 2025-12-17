@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/"
+  },
+  "@type": "Event",
+  "startDate": {
+    "@value": {},
+    "@type": "xsd:date"
+  }
+}
