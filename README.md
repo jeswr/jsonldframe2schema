@@ -4,6 +4,10 @@ A Python library that converts JSON-LD 1.1 Frames into JSON Schema documents for
 
 > ⚠️ **Warning:** This library is under active development and unstable. Additionally, it has been largely implemented by AI copilots and remains largely unreviewed by humans at this stage. Use with caution.
 
+## 🎮 Try it Online!
+
+**[Launch Web Playground](https://jeswr.github.io/jsonldframe2schema/playground/)** - Convert frames to schemas in real-time directly in your browser!
+
 ## Overview
 
 This library maps [JSON-LD 1.1 Framing](https://www.w3.org/TR/json-ld11-framing/) concepts to [JSON Schema](https://json-schema.org/) validation constructs. It allows you to define the expected structure of JSON-LD documents using frames and automatically generate corresponding JSON Schema documents.
@@ -11,6 +15,7 @@ This library maps [JSON-LD 1.1 Framing](https://www.w3.org/TR/json-ld11-framing/
 ## Features
 
 - ✅ Convert JSON-LD Frames to JSON Schema
+- ✅ **Web Playground** for real-time conversion powered by WebAssembly (Pyodide)
 - ✅ Support for JSON-LD framing flags (`@embed`, `@explicit`, `@requireAll`, `@omitDefault`)
 - ✅ Type inference from `@context` definitions
 - ✅ Nested object and array handling
@@ -257,6 +262,7 @@ This will run several examples demonstrating different features of the library.
 
 ## Documentation
 
+- **[Web Playground](https://jeswr.github.io/jsonldframe2schema/playground/)** - Interactive browser-based converter
 - [Formal Specification](https://jeswr.github.io/jsonldframe2schema/spec/) - W3C-style ReSpec specification of the algorithm
 - [MAPPING.md](MAPPING.md) - Formal mapping between JSON-LD Framing and JSON Schema
 - [ALGORITHM.md](ALGORITHM.md) - Algorithmic definition of the conversion process
