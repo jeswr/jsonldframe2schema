@@ -59,10 +59,10 @@ def get_test_case_by_id(test_id: str) -> Dict[str, Any]:
 # These are loaded lazily on first access
 class _LazyTestCaseLoader:
     """Lazy loader for backward compatibility with direct attribute access."""
-    
+
     def __init__(self):
         self._loaded = {}
-    
+
     def _load_all(self):
         """Load all test cases into a dictionary keyed by id."""
         if not self._loaded:
@@ -111,11 +111,11 @@ def __getattr__(name: str):
         "MULTIPLE_ID_FRAME": ("multiple_id", "frame"),
         "MULTIPLE_ID_EXPECTED_SCHEMA": ("multiple_id", "expected_schema"),
     }
-    
+
     if name in name_map:
         test_id, field = name_map[name]
         cases = _lazy_loader._load_all()
         if test_id in cases:
             return cases[test_id][field]
-    
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

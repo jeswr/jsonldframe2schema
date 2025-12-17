@@ -10,15 +10,13 @@ handle @context, @base, and other JSON-LD features.
 """
 
 import json
-import os
 import urllib.request
 import urllib.error
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
 from pyld import jsonld
-from rdflib import Graph, Namespace, URIRef, Literal
-from rdflib.namespace import RDF, RDFS
+from rdflib import Graph, Namespace
 
 
 BASE_URL = "https://w3c.github.io/json-ld-framing/tests/"
@@ -42,7 +40,7 @@ def create_document_loader():
                 content = response.read().decode("utf-8")
                 doc = json.loads(content)
                 return {"contextUrl": None, "documentUrl": url, "document": doc}
-        except Exception as e:
+        except Exception:
             raise jsonld.JsonLdError(
                 f"Could not load document: {url}",
                 "jsonld.LoadDocumentError",
@@ -191,7 +189,7 @@ def extract_test_info_from_expanded(
             for key, vals in opt.items():
                 if key.startswith("@"):
                     continue
-                # Get the local name from the URI
+                # Get the local name from the URI (strip trailing whitespace)
                 local_name = key.split("#")[-1] if "#" in key else key.split("/")[-1]
                 if vals and len(vals) > 0:
                     val = vals[0]
