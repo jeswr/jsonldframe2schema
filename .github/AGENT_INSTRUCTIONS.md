@@ -1147,3 +1147,66 @@ When making changes, document decisions here:
 3. **Issue**: Multiple types for single property not supported
    - **Impact**: Union types in JSON-LD not validated
    - **Workaround**: Use `anyOf` in schema manually
+
+---
+
+## Appendix C: Linting and Code Quality
+
+**IMPORTANT**: Before completing any task, agents MUST run the linting tools from CI to ensure code quality and that CI will pass.
+
+### C.1 Required Linting Steps
+
+At the end of every coding session, run the following linting tools in order:
+
+#### C.1.1 Code Formatting with Black
+
+First, check formatting:
+```bash
+black --check jsonldframe2schema tests examples
+```
+
+If formatting issues are found, fix them automatically:
+```bash
+black jsonldframe2schema tests examples
+```
+
+#### C.1.2 Code Linting with Flake8
+
+Check for code quality issues:
+```bash
+flake8 jsonldframe2schema tests --max-line-length=120
+```
+
+Fix any issues reported by flake8 manually.
+
+#### C.1.3 Type Checking with Mypy
+
+Check for type errors:
+```bash
+mypy jsonldframe2schema --ignore-missing-imports
+```
+
+Fix any type errors reported by mypy.
+
+### C.2 Linting Workflow
+
+1. **After making code changes**: Run all three linting tools
+2. **Fix all issues**: Do not leave linting errors unfixed
+3. **Commit fixes**: Use `report_progress` to commit linting fixes
+4. **Verify CI**: Ensure all linting checks will pass in CI
+
+### C.3 Installing Linting Tools
+
+If linting tools are not installed, install them first:
+```bash
+pip install -r requirements-dev.txt
+```
+
+### C.4 Pre-Commit Checklist
+
+Before finalizing any task:
+- [ ] Run `black` to format code
+- [ ] Run `flake8` and fix all issues
+- [ ] Run `mypy` and fix all type errors
+- [ ] Verify no linting errors remain
+- [ ] Commit all changes including linting fixes
