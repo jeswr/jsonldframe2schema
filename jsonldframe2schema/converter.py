@@ -144,13 +144,13 @@ class FrameToSchemaConverter:
 
     def _extract_context(self, frame: Dict[str, Any]) -> Dict[str, Optional[str]]:
         """
-        Extract type information from @context.
+        Extract type and container information from @context.
 
         Args:
             frame: JSON-LD Frame object
 
         Returns:
-            Dictionary mapping property names to their type URIs
+            Dictionary mapping property names to their type URIs or container info
         """
         context = frame.get("@context")
         if not context:
@@ -162,16 +162,16 @@ class FrameToSchemaConverter:
         self, context: Union[str, Dict, List]
     ) -> Dict[str, Optional[str]]:
         """
-        Parse JSON-LD context to extract type coercion information using pyld.
+        Parse JSON-LD context to extract type coercion and container information.
 
         This method uses only pyld's expand() function to extract type information,
-        without any custom context parsing logic.
+        without any custom context parsing logic. It also captures @container values.
 
         Args:
             context: JSON-LD context (string, dict, or list)
 
         Returns:
-            Dictionary mapping property names to their type URIs (expanded or prefixed)
+            Dictionary mapping property names to their type URIs or container types
         """
         type_map: Dict[str, Optional[str]] = {}
 
@@ -190,8 +190,13 @@ class FrameToSchemaConverter:
                     if isinstance(value, str):
                         continue
 
+                    # Check if this property definition has @container
+                    if isinstance(value, dict) and "@container" in value:
+                        # Store container type with special prefix
+                        container_type = value["@container"]
+                        type_map[key] = f"@container:{container_type}"
                     # Check if this property definition has type coercion
-                    if isinstance(value, dict) and "@type" in value:
+                    elif isinstance(value, dict) and "@type" in value:
                         # Use pyld.expand() to resolve the type URI
                         test_doc = {"@context": context, key: "test_value"}
                         try:
@@ -214,7 +219,7 @@ class FrameToSchemaConverter:
                             # If pyld cannot process this property, store None
                             type_map[key] = None
                     elif isinstance(value, dict):
-                        # Property definition without type coercion
+                        # Property definition without type coercion or container
                         type_map[key] = None
 
             # Process array contexts (recursively)
@@ -373,6 +378,12 @@ class FrameToSchemaConverter:
             # Array frame
             return self._process_array_frame(value, flags, context)
         elif isinstance(value, dict):
+            # Check if this dict has @default (but not other frame keywords)
+            if "@default" in value and not ("@value" in value or "@type" in value or "@id" in value):
+                # Property with default value
+                schema = self._infer_type_from_context(key, context_type)
+                schema["default"] = value["@default"]
+                return schema
             # Check if this is a value object frame
             if "@value" in value:
                 return self._process_value_object_frame(value, flags, context)
@@ -385,17 +396,48 @@ class FrameToSchemaConverter:
         self, key: str, context_type: Optional[str]
     ) -> Dict[str, Any]:
         """
-        Infer JSON Schema type from JSON-LD context type.
+        Infer JSON Schema type from JSON-LD context type or container.
 
         Args:
             key: Property name
-            context_type: Type from context or None
+            context_type: Type from context, container spec, or None
 
         Returns:
             JSON Schema type definition
         """
         if context_type is None:
             return {"type": "string"}
+
+        # Check if this is a container specification
+        if context_type.startswith("@container:"):
+            container_type = context_type.replace("@container:", "")
+            
+            if container_type == "@language":
+                # Language map: allows string or object with language codes as keys
+                return {
+                    "oneOf": [
+                        {"type": "string"},
+                        {
+                            "type": "object",
+                            "patternProperties": {
+                                "^[a-z]{2}(-[A-Z]{2})?$": {"type": "string"}
+                            },
+                            "additionalProperties": False,
+                        },
+                    ]
+                }
+            elif container_type == "@index":
+                # Index container: object with arbitrary keys
+                return {
+                    "type": "object",
+                    "additionalProperties": {"type": "string"},
+                }
+            elif container_type == "@set":
+                # Set container: array with unique items
+                return {"type": "array", "uniqueItems": True}
+            elif container_type == "@list":
+                # List container: ordered array
+                return {"type": "array"}
 
         # Map JSON-LD types to JSON Schema types
         if context_type in self.TYPE_MAPPINGS:

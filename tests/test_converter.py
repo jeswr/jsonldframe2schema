@@ -406,6 +406,110 @@ class TestNewFeatures(unittest.TestCase):
         self.assertIn("@type", value_obj["properties"])
         self.assertEqual(value_obj["properties"]["@type"]["const"], "xsd:date")
 
+    def test_language_map_container(self):
+        """Test @container: @language creates language map schema."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "name": {
+                    "@id": "http://schema.org/name",
+                    "@container": "@language",
+                },
+            },
+            "@type": "Person",
+            "name": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that name property allows string or language map
+        self.assertIn("name", schema["properties"])
+        name_schema = schema["properties"]["name"]
+        self.assertIn("oneOf", name_schema)
+
+        # Second option should be object with pattern properties
+        lang_map = name_schema["oneOf"][1]
+        self.assertEqual(lang_map["type"], "object")
+        self.assertIn("patternProperties", lang_map)
+        self.assertFalse(lang_map["additionalProperties"])
+
+    def test_index_container(self):
+        """Test @container: @index creates index map schema."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "address": {
+                    "@id": "http://schema.org/address",
+                    "@container": "@index",
+                },
+            },
+            "@type": "Organization",
+            "address": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that address property is object with additionalProperties
+        self.assertIn("address", schema["properties"])
+        address_schema = schema["properties"]["address"]
+        self.assertEqual(address_schema["type"], "object")
+        self.assertIn("additionalProperties", address_schema)
+
+    def test_set_container(self):
+        """Test @container: @set creates array with uniqueItems."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "keywords": {
+                    "@id": "http://schema.org/keywords",
+                    "@container": "@set",
+                },
+            },
+            "@type": "Article",
+            "keywords": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that keywords is array with uniqueItems
+        self.assertIn("keywords", schema["properties"])
+        keywords_schema = schema["properties"]["keywords"]
+        self.assertEqual(keywords_schema["type"], "array")
+        self.assertTrue(keywords_schema["uniqueItems"])
+
+    def test_list_container(self):
+        """Test @container: @list creates ordered array schema."""
+        frame = {
+            "@context": {
+                "@vocab": "http://schema.org/",
+                "itemListElement": {
+                    "@id": "http://schema.org/itemListElement",
+                    "@container": "@list",
+                },
+            },
+            "@type": "ItemList",
+            "itemListElement": {},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that itemListElement is array
+        self.assertIn("itemListElement", schema["properties"])
+        list_schema = schema["properties"]["itemListElement"]
+        self.assertEqual(list_schema["type"], "array")
+
+    def test_default_value(self):
+        """Test @default in property frame maps to default keyword."""
+        frame = {
+            "@context": {"@vocab": "http://schema.org/"},
+            "@type": "Person",
+            "name": {},
+            "status": {"@default": "active"},
+        }
+        schema = frame_to_schema(frame, graph_only=True)
+
+        # Check that status has default value
+        self.assertIn("status", schema["properties"])
+        status_schema = schema["properties"]["status"]
+        self.assertEqual(status_schema["type"], "string")
+        self.assertEqual(status_schema["default"], "active")
+
 
 class TestAllPredefinedCases(unittest.TestCase):
     """Run all predefined test cases as a batch."""
