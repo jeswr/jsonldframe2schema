@@ -87,11 +87,30 @@ The playground is a single self-contained HTML file for easy deployment and main
 
 1. Edit `index.html`
 2. Test locally with an HTTP server
-3. Commit changes - GitHub Actions will deploy automatically
+3. Run end-to-end tests: `python tests/test_playground_e2e.py`
+4. Commit changes - GitHub Actions will deploy automatically
 
 ### Updating the Converter Code
 
 The Python converter code is embedded in the HTML within a `<script>` tag. When updating the main library, the embedded code should be updated to match.
+
+## Testing
+
+The playground includes comprehensive end-to-end tests that verify:
+- HTML structure and accessibility
+- JavaScript functions and event handlers
+- Embedded Python converter code
+- Error handling and user feedback
+
+See [TESTING.md](TESTING.md) for details on why the playground appears to fail in sandboxed environments but works correctly in production.
+
+```bash
+# Run tests
+python tests/test_playground_e2e.py
+
+# Or with pytest
+pytest tests/test_playground_e2e.py -v
+```
 
 ## Deployment
 
