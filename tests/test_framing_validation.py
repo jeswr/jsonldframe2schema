@@ -93,7 +93,7 @@ def load_manifest_tests() -> List[FramingTestCase]:
         test_types = test.get("@type", [])
 
         is_positive = "jld:PositiveEvaluationTest" in test_types
-        is_negative = "jld:NegativeEvaluationTest" in test_types
+        _ = "jld:NegativeEvaluationTest" in test_types  # is_negative unused
 
         tests.append(
             FramingTestCase(
@@ -603,14 +603,14 @@ class TestFramingSchemaConformance(unittest.TestCase):
         print(f"Framing Errors:  {len(results['framing_errors'])}")
 
         if results["failed"]:
-            print(f"\nFailed Tests:")
+            print("\nFailed Tests:")
             for test_id, error in results["failed"][:10]:
                 print(f"  - {test_id}: {error[:100]}")
             if len(results["failed"]) > 10:
                 print(f"  ... and {len(results['failed']) - 10} more")
 
         if results["framing_errors"]:
-            print(f"\nFraming Errors (pyld issues, not our fault):")
+            print("\nFraming Errors (pyld issues, not our fault):")
             for test_id, error in results["framing_errors"][:5]:
                 print(f"  - {test_id}: {error[:100]}")
 

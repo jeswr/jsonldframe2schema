@@ -14,11 +14,9 @@ Usage:
     python tests/test_converter.py
 """
 
-import json
 import sys
 import unittest
-from pathlib import Path
-from typing import Dict, Any
+from typing import Dict
 
 from jsonldframe2schema import frame_to_schema, FrameToSchemaConverter
 from tests.expected_schemas import get_all_test_cases, get_test_case_by_id
