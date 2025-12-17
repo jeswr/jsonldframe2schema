@@ -105,13 +105,22 @@ function parseContext(context):
     if isObject(context):
         for key, value in context:
             if key != "@vocab" and key != "@base":
-                // Check for @container directive (takes precedence for schema generation)
-                if isObject(value) and "@container" in value:
-                    containerType = value["@container"]
-                    typeMap[key] = "@container:" + containerType
-                // Check for @type coercion
-                else if isObject(value) and "@type" in value:
-                    typeMap[key] = value["@type"]
+                // Check if property definition has @container or @type (or both)
+                if isObject(value) and ("@container" in value or "@type" in value):
+                    parts = []
+                    
+                    // Handle @container directive if present
+                    if "@container" in value:
+                        containerType = value["@container"]
+                        parts.append("@container:" + containerType)
+                    
+                    // Handle @type coercion if present
+                    if "@type" in value:
+                        parts.append(value["@type"])
+                    
+                    // Combine both values with separator if both present
+                    if length(parts) > 0:
+                        typeMap[key] = join(parts, "|")
     
     return typeMap
 ```

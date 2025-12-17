@@ -53,6 +53,9 @@ class FrameToSchemaConverter:
     # Prefix used to mark container types in context map
     CONTAINER_PREFIX = "@container:"
     # Separator for encoding both container and type in context map
+    # Note: Using "|" as separator is safe because:
+    # - @container values are keywords (@set, @list, @index, @language) without pipes
+    # - Type URIs in JSON-LD (xsd:*, @id, etc.) do not contain pipe characters
     CONTEXT_SEPARATOR = "|"
 
     def __init__(
@@ -224,6 +227,14 @@ class FrameToSchemaConverter:
                                             ):
                                                 type_uri = prop_values[0].get("@type")
                                                 if type_uri:
+                                                    # Validate that type URI doesn't contain separator
+                                                    # (should never happen with valid JSON-LD types)
+                                                    if (
+                                                        self.CONTEXT_SEPARATOR
+                                                        in type_uri
+                                                    ):
+                                                        # Skip this type if it contains separator
+                                                        continue
                                                     parts.append(type_uri)
                                                     break
                             except (jsonld.JsonLdError, ValueError, TypeError):
