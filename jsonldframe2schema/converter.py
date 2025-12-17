@@ -52,6 +52,8 @@ class FrameToSchemaConverter:
 
     # Prefix used to mark container types in context map
     CONTAINER_PREFIX = "@container:"
+    # Separator for encoding both container and type in context map
+    CONTEXT_SEPARATOR = "|"
 
     def __init__(
         self,
@@ -193,33 +195,45 @@ class FrameToSchemaConverter:
                     if isinstance(value, str):
                         continue
 
-                    # Check if this property definition has @container
-                    if isinstance(value, dict) and "@container" in value:
-                        # Store container type with special prefix
-                        container_type = value["@container"]
-                        type_map[key] = f"{self.CONTAINER_PREFIX}{container_type}"
-                    # Check if this property definition has type coercion
-                    elif isinstance(value, dict) and "@type" in value:
-                        # Use pyld.expand() to resolve the type URI
-                        test_doc = {"@context": context, key: "test_value"}
-                        try:
-                            expanded = jsonld.expand(test_doc)
-                            # Extract type from expanded document
-                            if expanded and len(expanded) > 0:
-                                for prop_uri, prop_values in expanded[0].items():
-                                    if not prop_uri.startswith("@"):
-                                        if (
-                                            prop_values
-                                            and isinstance(prop_values, list)
-                                            and len(prop_values) > 0
-                                            and isinstance(prop_values[0], dict)
-                                        ):
-                                            type_uri = prop_values[0].get("@type")
-                                            if type_uri:
-                                                type_map[key] = type_uri
-                                                break
-                        except (jsonld.JsonLdError, ValueError, TypeError):
-                            # If pyld cannot process this property, store None
+                    # Check if this property definition has @container or @type
+                    if isinstance(value, dict) and (
+                        "@container" in value or "@type" in value
+                    ):
+                        parts = []
+
+                        # Handle @container directive
+                        if "@container" in value:
+                            container_type = value["@container"]
+                            parts.append(f"{self.CONTAINER_PREFIX}{container_type}")
+
+                        # Handle @type coercion
+                        if "@type" in value:
+                            # Use pyld.expand() to resolve the type URI
+                            test_doc = {"@context": context, key: "test_value"}
+                            try:
+                                expanded = jsonld.expand(test_doc)
+                                # Extract type from expanded document
+                                if expanded and len(expanded) > 0:
+                                    for prop_uri, prop_values in expanded[0].items():
+                                        if not prop_uri.startswith("@"):
+                                            if (
+                                                prop_values
+                                                and isinstance(prop_values, list)
+                                                and len(prop_values) > 0
+                                                and isinstance(prop_values[0], dict)
+                                            ):
+                                                type_uri = prop_values[0].get("@type")
+                                                if type_uri:
+                                                    parts.append(type_uri)
+                                                    break
+                            except (jsonld.JsonLdError, ValueError, TypeError):
+                                # If pyld cannot process this property, continue
+                                pass
+
+                        # Store the combined value or set to None if no parts
+                        if parts:
+                            type_map[key] = self.CONTEXT_SEPARATOR.join(parts)
+                        else:
                             type_map[key] = None
                     elif isinstance(value, dict):
                         # Property definition without type coercion or container
@@ -419,7 +433,7 @@ class FrameToSchemaConverter:
 
         Args:
             key: Property name
-            context_type: Type from context, container spec, or None
+            context_type: Type from context, container spec, or combination of both
 
         Returns:
             JSON Schema type definition
@@ -427,10 +441,33 @@ class FrameToSchemaConverter:
         if context_type is None:
             return {"type": "string"}
 
-        # Check if this is a container specification
-        if context_type.startswith(self.CONTAINER_PREFIX):
+        # Check if this contains both container and type (separated by CONTEXT_SEPARATOR)
+        container_spec = None
+        type_spec = None
+
+        if self.CONTEXT_SEPARATOR in context_type:
+            # Split and identify parts
+            parts = context_type.split(self.CONTEXT_SEPARATOR)
+            for part in parts:
+                if part.startswith(self.CONTAINER_PREFIX):
+                    container_spec = part
+                else:
+                    type_spec = part
+        elif context_type.startswith(self.CONTAINER_PREFIX):
+            container_spec = context_type
+        else:
+            type_spec = context_type
+
+        # Process container if present
+        if container_spec:
             # Extract container type using structured approach
-            container_type = context_type[len(self.CONTAINER_PREFIX) :]
+            container_type = container_spec[len(self.CONTAINER_PREFIX) :]
+
+            # Get the item schema (either from type_spec or default to string)
+            if type_spec and type_spec in self.TYPE_MAPPINGS:
+                item_schema = copy.deepcopy(self.TYPE_MAPPINGS[type_spec])
+            else:
+                item_schema = {"type": "string"}
 
             if container_type == "@language":
                 # Language map: allows string or object with language codes as keys
@@ -438,14 +475,12 @@ class FrameToSchemaConverter:
                 # This pattern is more permissive to handle common cases
                 return {
                     "oneOf": [
-                        {"type": "string"},
+                        item_schema,
                         {
                             "type": "object",
                             "patternProperties": {
                                 # Matches: en, en-US, es-419, zh-Hans-CN, etc.
-                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2}|-[0-9]{3})?(-[a-z0-9]+)*$": {
-                                    "type": "string"
-                                }
+                                "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2}|-[0-9]{3})?(-[a-z0-9]+)*$": item_schema
                             },
                             "additionalProperties": False,
                         },
@@ -453,20 +488,35 @@ class FrameToSchemaConverter:
                 }
             elif container_type == "@index":
                 # Index container: object with arbitrary keys
-                return {
-                    "type": "object",
-                    "additionalProperties": {"type": "string"},
-                }
+                # Only add items schema if there's type coercion
+                if type_spec:
+                    return {
+                        "type": "object",
+                        "additionalProperties": item_schema,
+                    }
+                else:
+                    return {
+                        "type": "object",
+                        "additionalProperties": {"type": "string"},
+                    }
             elif container_type == "@set":
                 # Set container: array with unique items
-                return {"type": "array", "uniqueItems": True}
+                # Only add items schema if there's type coercion
+                if type_spec:
+                    return {"type": "array", "uniqueItems": True, "items": item_schema}
+                else:
+                    return {"type": "array", "uniqueItems": True}
             elif container_type == "@list":
                 # List container: ordered array
-                return {"type": "array"}
+                # Only add items schema if there's type coercion
+                if type_spec:
+                    return {"type": "array", "items": item_schema}
+                else:
+                    return {"type": "array"}
 
-        # Map JSON-LD types to JSON Schema types
-        if context_type in self.TYPE_MAPPINGS:
-            return copy.deepcopy(self.TYPE_MAPPINGS[context_type])
+        # Map JSON-LD types to JSON Schema types (no container)
+        if type_spec and type_spec in self.TYPE_MAPPINGS:
+            return copy.deepcopy(self.TYPE_MAPPINGS[type_spec])
 
         return {"type": "string"}
 
