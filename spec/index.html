@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>JSON-LD Frame to JSON Schema Conversion Algorithm</title>
+  <script src="https://www.w3.org/Tools/respec/respec-w3c" class="remove" defer></script>
+  <script class="remove">
+    var respecConfig = {
+      specStatus: "unofficial",
+      shortName: "jsonldframe2schema",
+      editors: [
+        {
+          name: "Jesse Wright",
+          url: "https://github.com/jeswr"
+        }
+      ],
+      github: {
+        repoURL: "https://github.com/jeswr/jsonldframe2schema",
+        branch: "main"
+      },
+      edDraftURI: "https://jeswr.github.io/jsonldframe2schema/spec/",
+      license: "mit",
+      maxTocLevel: 4,
+      localBiblio: {
+        "JSON-LD11-FRAMING": {
+          title: "JSON-LD 1.1 Framing",
+          href: "https://www.w3.org/TR/json-ld11-framing/",
+          authors: ["Gregg Kellogg"],
+          publisher: "W3C",
+          status: "W3C Recommendation",
+          date: "16 July 2020"
+        },
+        "JSON-SCHEMA": {
+          title: "JSON Schema: A Media Type for Describing JSON Documents",
+          href: "https://json-schema.org/draft/2020-12/json-schema-core.html",
+          authors: ["Austin Wright", "Henry Andrews", "Ben Hutton", "Greg Dennis"],
+          publisher: "IETF",
+          date: "2020"
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <section id="abstract">
+    <p>
+      This document defines an algorithm for converting JSON-LD 1.1 Frames into JSON Schema documents. 
+      The algorithm provides a systematic way to translate JSON-LD framing concepts into JSON Schema 
+      validation constructs, enabling validation of JSON-LD documents based on their expected frame structure.
+    </p>
+  </section>
+
+  <section id="sotd">
+    <p>
+      This is an unofficial specification documenting the JSON-LD Frame to JSON Schema conversion algorithm.
+      Comments and feedback are welcome via the GitHub repository.
+    </p>
+  </section>
+
+  <section class="informative">
+    <h2>Introduction</h2>
+    <p>
+      JSON-LD 1.1 Framing [[JSON-LD11-FRAMING]] provides a mechanism to shape and structure JSON-LD data 
+      according to developer-specified patterns. JSON Schema [[JSON-SCHEMA]] provides a vocabulary for 
+      validating the structure, types, and constraints of JSON documents. This specification defines a 
+      formal algorithm for converting frames into schemas, bridging these two technologies.
+    </p>
+    
+    <section>
+      <h3>Use Cases</h3>
+      <p>The conversion algorithm enables several important use cases:</p>
+      <ul>
+        <li>Validation of JSON-LD documents against expected frame structures</li>
+        <li>Generation of documentation for JSON-LD APIs</li>
+        <li>Type checking and IDE support for JSON-LD data</li>
+        <li>Contract testing for systems that produce or consume JSON-LD</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Design Goals</h3>
+      <p>The algorithm is designed with the following goals:</p>
+      <ul>
+        <li>Preserve the structural expectations expressed in JSON-LD frames</li>
+        <li>Map framing flags to appropriate JSON Schema validation constructs</li>
+        <li>Support type inference from JSON-LD <code>@context</code> definitions</li>
+        <li>Generate schemas compatible with JSON Schema Draft 2020-12 and later</li>
+        <li>Maintain reasonable performance characteristics (linear time complexity)</li>
+      </ul>
+    </section>
+  </section>
+
+  <section>
+    <h2>Conformance</h2>
+    <p>
+      A conforming implementation MUST implement the algorithm as specified in the <a href="#algorithm">Algorithm Definition</a> section.
+    </p>
+  </section>
+
+  <section class="informative">
+    <h2>Terminology</h2>
+    
+    <p>The following terms are used throughout this specification:</p>
+    
+    <dl>
+      <dt><dfn>frame</dfn></dt>
+      <dd>A JSON-LD Frame object as defined in [[JSON-LD11-FRAMING]]</dd>
+      
+      <dt><dfn>schema</dfn></dt>
+      <dd>A JSON Schema document as defined in [[JSON-SCHEMA]]</dd>
+      
+      <dt><dfn>framing flag</dfn></dt>
+      <dd>A keyword that controls framing behavior, including <code>@embed</code>, <code>@explicit</code>, 
+          <code>@requireAll</code>, and <code>@omitDefault</code></dd>
+      
+      <dt><dfn>context</dfn></dt>
+      <dd>A JSON-LD context that defines mappings from terms to IRIs and type coercion rules</dd>
+      
+      <dt><dfn>type coercion</dfn></dt>
+      <dd>The process of specifying how values should be interpreted using the <code>@type</code> 
+          keyword within a context definition</dd>
+      
+      <dt><dfn>property frame</dfn></dt>
+      <dd>A value in a frame object that describes the expected structure for a property</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Algorithm Overview</h2>
+    
+    <p>The conversion process consists of the following phases:</p>
+    
+    <ol>
+      <li><strong>Parse Frame</strong>: Parse and validate the JSON-LD Frame input</li>
+      <li><strong>Extract Context</strong>: Extract type information from <code>@context</code> if present</li>
+      <li><strong>Process Frame Structure</strong>: Recursively process the frame to build the schema</li>
+      <li><strong>Apply Framing Flags</strong>: Apply global framing flags to schema properties</li>
+      <li><strong>Generate Schema</strong>: Output the complete JSON Schema document</li>
+    </ol>
+
+    <p>The algorithm has:</p>
+    <ul>
+      <li><strong>Time Complexity</strong>: O(n) where n is the number of properties in the frame (including nested)</li>
+      <li><strong>Space Complexity</strong>: O(d) where d is the maximum depth of nested frames</li>
+    </ul>
+  </section>
+
+  <section id="algorithm">
+    <h2>Algorithm Definition</h2>
+    
+    <section>
+      <h3>Main Entry Point</h3>
+      
+      <p>The main conversion function takes a <a>frame</a> and returns a <a>schema</a>.</p>
+      
+      <pre class="algorithm">
+<dfn>frameToSchema</dfn>(<var>frame</var>, <var>schemaVersion</var>)
+
+Arguments:
+  <var>frame</var>: A JSON-LD Frame object
+  <var>schemaVersion</var>: JSON Schema version URI (optional, defaults to Draft 2020-12)
+
+Returns:
+  A JSON Schema document
+
+Steps:
+  1. Let <var>schema</var> be a new object
+  2. Set <var>schema</var>["$schema"] to <var>schemaVersion</var>
+  3. Set <var>schema</var>["type"] to "object"
+  4. Let <var>flags</var> be the result of calling <a>extractFramingFlags</a>(<var>frame</var>)
+  5. Let <var>context</var> be the result of calling <a>extractContext</a>(<var>frame</var>)
+  6. Call <a>processFrameObject</a>(<var>frame</var>, <var>schema</var>, <var>flags</var>, <var>context</var>)
+  7. Return <var>schema</var>
+      </pre>
+    </section>
+
+    <section>
+      <h3>Extract Framing Flags</h3>
+      
+      <p>This function extracts <a>framing flags</a> from a frame object.</p>
+      
+      <pre class="algorithm">
+<dfn>extractFramingFlags</dfn>(<var>frame</var>)
+
+Arguments:
+  <var>frame</var>: A JSON-LD Frame object
+
+Returns:
+  An object containing framing flag values
+
+Steps:
+  1. Let <var>flags</var> be a new object
+  2. Set <var>flags</var>["embed"] to <var>frame</var>["@embed"] if present, otherwise true
+  3. Set <var>flags</var>["explicit"] to <var>frame</var>["@explicit"] if present, otherwise false
+  4. Set <var>flags</var>["requireAll"] to <var>frame</var>["@requireAll"] if present, otherwise false
+  5. Set <var>flags</var>["omitDefault"] to <var>frame</var>["@omitDefault"] if present, otherwise false
+  6. Return <var>flags</var>
+      </pre>
+    </section>
+
+    <section>
+      <h3>Extract Context</h3>
+      
+      <p>This function extracts type information from the JSON-LD <a>context</a>.</p>
+      
+      <pre class="algorithm">
+<dfn>extractContext</dfn>(<var>frame</var>)
+
+Arguments:
+  <var>frame</var>: A JSON-LD Frame object
+
+Returns:
+  A map from property names to type URIs
+
+Steps:
+  1. If <var>frame</var>["@context"] does not exist, return an empty map
+  2. Let <var>context</var> be <var>frame</var>["@context"]
+  3. Return the result of calling <a>parseContext</a>(<var>context</var>)
+      </pre>
+
+      <pre class="algorithm">
+<dfn>parseContext</dfn>(<var>context</var>)
+
+Arguments:
+  <var>context</var>: A JSON-LD context (string, object, or array)
+
+Returns:
+  A map from property names to type URIs
+
+Steps:
+  1. Let <var>typeMap</var> be a new empty map
+  2. If <var>context</var> is not an object, return <var>typeMap</var>
+  3. For each <var>key</var> → <var>value</var> in <var>context</var>:
+     1. If <var>key</var> starts with "@", continue to next iteration
+     2. If <var>value</var> is not an object, continue to next iteration
+     3. If <var>value</var>["@type"] exists:
+        1. Set <var>typeMap</var>[<var>key</var>] to <var>value</var>["@type"]
+  4. Return <var>typeMap</var>
+      </pre>
+    </section>
+
+    <section>
+      <h3>Process Frame Object</h3>
+      
+      <p>This function processes a frame object and populates the corresponding schema object.</p>
+      
+      <pre class="algorithm">
+<dfn>processFrameObject</dfn>(<var>frame</var>, <var>schema</var>, <var>flags</var>, <var>context</var>)
+
+Arguments:
+  <var>frame</var>: A JSON-LD Frame object
+  <var>schema</var>: The schema object to populate
+  <var>flags</var>: Framing flags
+  <var>context</var>: Type context mapping
+
+Steps:
+  1. Let <var>properties</var> be a new empty object
+  2. Let <var>required</var> be a new empty array
+  3. If <var>frame</var>["@type"] exists:
+     1. Let <var>typeSchema</var> be the result of calling <a>processTypeConstraint</a>(<var>frame</var>["@type"])
+     2. Set <var>properties</var>["@type"] to <var>typeSchema</var>
+     3. If <var>frame</var>["@type"] is not a wildcard, append "@type" to <var>required</var>
+  4. If <var>frame</var>["@id"] exists:
+     1. Let <var>idSchema</var> be the result of calling <a>processIdConstraint</a>(<var>frame</var>["@id"])
+     2. Set <var>properties</var>["@id"] to <var>idSchema</var>
+     3. If <var>frame</var>["@id"] is not empty, append "@id" to <var>required</var>
+  5. For each <var>key</var> → <var>value</var> in <var>frame</var>:
+     1. If <var>key</var> is a framing keyword, continue to next iteration
+     2. If <var>key</var> is "@type" or "@id", continue to next iteration
+     3. Let <var>propSchema</var> be the result of calling <a>processProperty</a>(<var>key</var>, <var>value</var>, <var>flags</var>, <var>context</var>)
+     4. Set <var>properties</var>[<var>key</var>] to <var>propSchema</var>
+     5. If <a>shouldBeRequired</a>(<var>key</var>, <var>value</var>, <var>flags</var>) is true, append <var>key</var> to <var>required</var>
+  6. If <var>properties</var> is not empty, set <var>schema</var>["properties"] to <var>properties</var>
+  7. If <var>required</var> is not empty, set <var>schema</var>["required"] to <var>required</var>
+  8. If <var>flags</var>["explicit"] is true:
+     1. Set <var>schema</var>["additionalProperties"] to false
+  9. Otherwise:
+     1. Set <var>schema</var>["additionalProperties"] to true
+      </pre>
+    </section>
+
+    <section>
+      <h3>Process Type Constraint</h3>
+      
+      <pre class="algorithm">
+<dfn>processTypeConstraint</dfn>(<var>typeValue</var>)
+
+Arguments:
+  <var>typeValue</var>: The @type value from the frame
+
+Returns:
+  A JSON Schema type constraint object
+
+Steps:
+  1. If <var>typeValue</var> is a string:
+     1. Return { "const": <var>typeValue</var> }
+  2. If <var>typeValue</var> is an array:
+     1. If the length of <var>typeValue</var> is 0:
+        1. Return { "type": "string" }
+     2. If the length of <var>typeValue</var> is 1:
+        1. Return { "const": <var>typeValue</var>[0] }
+     3. Otherwise:
+        1. Return { "enum": <var>typeValue</var> }
+  3. If <var>typeValue</var> is an empty object:
+     1. Return { "type": "string" }
+  4. Return { "type": "string" }
+      </pre>
+    </section>
+
+    <section>
+      <h3>Process ID Constraint</h3>
+      
+      <pre class="algorithm">
+<dfn>processIdConstraint</dfn>(<var>idValue</var>)
+
+Arguments:
+  <var>idValue</var>: The @id value from the frame
+
+Returns:
+  A JSON Schema ID constraint object
+
+Steps:
+  1. If <var>idValue</var> is a string:
+     1. Return { "const": <var>idValue</var> }
+  2. If <var>idValue</var> is an empty object:
+     1. Return { "type": "string", "format": "uri" }
+  3. If <var>idValue</var> is an object and <var>idValue</var>["@id"] exists:
+     1. Return the result of calling <a>processIdConstraint</a>(<var>idValue</var>["@id"])
+  4. Return { "type": "string", "format": "uri" }
+      </pre>
+    </section>
+
+    <section>
+      <h3>Process Property</h3>
+      
+      <pre class="algorithm">
+<dfn>processProperty</dfn>(<var>key</var>, <var>value</var>, <var>flags</var>, <var>context</var>)
+
+Arguments:
+  <var>key</var>: Property name
+  <var>value</var>: Property value from frame
+  <var>flags</var>: Framing flags
+  <var>context</var>: Type context mapping
+
+Returns:
+  A JSON Schema property definition
+
+Steps:
+  1. Let <var>contextType</var> be <var>context</var>[<var>key</var>] if it exists, otherwise null
+  2. If <var>value</var> is an empty object:
+     1. Return the result of calling <a>inferTypeFromContext</a>(<var>key</var>, <var>contextType</var>)
+  3. If <var>value</var> is a string, number, or boolean:
+     1. Let <var>jsonType</var> be the result of calling <a>inferJsonType</a>(<var>value</var>)
+     2. Return { "type": <var>jsonType</var>, "default": <var>value</var> }
+  4. If <var>value</var> is an array:
+     1. Return the result of calling <a>processArrayFrame</a>(<var>value</var>, <var>flags</var>, <var>context</var>)
+  5. If <var>value</var> is an object:
+     1. Return the result of calling <a>processNestedFrame</a>(<var>value</var>, <var>flags</var>, <var>context</var>)
+  6. Return an empty object
+      </pre>
+    </section>
+
+    <section>
+      <h3>Infer Type from Context</h3>
+      
+      <pre class="algorithm">
+<dfn>inferTypeFromContext</dfn>(<var>key</var>, <var>contextType</var>)
+
+Arguments:
+  <var>key</var>: Property name
+  <var>contextType</var>: Type from context or null
+
+Returns:
+  A JSON Schema type definition
+
+Steps:
+  1. If <var>contextType</var> is null:
+     1. Return { "type": "string" }
+  2. Let <var>mapping</var> be the type mapping for <var>contextType</var>:
+     - "@id" → { "type": "string", "format": "uri" }
+     - "http://www.w3.org/2001/XMLSchema#string" → { "type": "string" }
+     - "http://www.w3.org/2001/XMLSchema#integer" → { "type": "integer" }
+     - "http://www.w3.org/2001/XMLSchema#int" → { "type": "integer" }
+     - "http://www.w3.org/2001/XMLSchema#long" → { "type": "integer" }
+     - "http://www.w3.org/2001/XMLSchema#boolean" → { "type": "boolean" }
+     - "http://www.w3.org/2001/XMLSchema#double" → { "type": "number" }
+     - "http://www.w3.org/2001/XMLSchema#float" → { "type": "number" }
+     - "http://www.w3.org/2001/XMLSchema#decimal" → { "type": "number" }
+     - "http://www.w3.org/2001/XMLSchema#dateTime" → { "type": "string", "format": "date-time" }
+     - "http://www.w3.org/2001/XMLSchema#date" → { "type": "string", "format": "date" }
+     - "http://www.w3.org/2001/XMLSchema#time" → { "type": "string", "format": "time" }
+  3. If <var>mapping</var> exists for <var>contextType</var>, return <var>mapping</var>
+  4. Return { "type": "string" }
+      </pre>
+    </section>
+
+    <section>
+      <h3>Process Array Frame</h3>
+      
+      <pre class="algorithm">
+<dfn>processArrayFrame</dfn>(<var>arrayValue</var>, <var>flags</var>, <var>context</var>)
+
+Arguments:
+  <var>arrayValue</var>: Array from frame
+  <var>flags</var>: Framing flags
+  <var>context</var>: Type context mapping
+
+Returns:
+  A JSON Schema array definition
+
+Steps:
+  1. If the length of <var>arrayValue</var> is 0:
+     1. Return { "type": "array", "items": {} }
+  2. Let <var>itemFrame</var> be <var>arrayValue</var>[0]
+  3. Let <var>itemSchema</var> be determined as follows:
+     1. If <var>itemFrame</var> is an object:
+        1. Call <a>processNestedFrame</a>(<var>itemFrame</var>, <var>flags</var>, <var>context</var>)
+     2. Otherwise:
+        1. Let <var>jsonType</var> be the result of calling <a>inferJsonType</a>(<var>itemFrame</var>)
+        2. Use { "type": <var>jsonType</var> }
+  4. Return { "type": "array", "items": <var>itemSchema</var> }
+      </pre>
+    </section>
+
+    <section>
+      <h3>Process Nested Frame</h3>
+      
+      <pre class="algorithm">
+<dfn>processNestedFrame</dfn>(<var>frameObj</var>, <var>flags</var>, <var>context</var>)
+
+Arguments:
+  <var>frameObj</var>: Nested frame object
+  <var>flags</var>: Parent framing flags
+  <var>context</var>: Type context mapping
+
+Returns:
+  A JSON Schema nested object definition
+
+Steps:
+  1. Let <var>nestedFlags</var> be a new object with the following properties:
+     - "embed": <var>frameObj</var>["@embed"] if present, otherwise <var>flags</var>["embed"]
+     - "explicit": <var>frameObj</var>["@explicit"] if present, otherwise <var>flags</var>["explicit"]
+     - "requireAll": <var>frameObj</var>["@requireAll"] if present, otherwise <var>flags</var>["requireAll"]
+     - "omitDefault": <var>frameObj</var>["@omitDefault"] if present, otherwise <var>flags</var>["omitDefault"]
+  2. Let <var>embedValue</var> be <var>nestedFlags</var>["embed"]
+  3. If <var>embedValue</var> is false or "@never":
+     1. Return {
+          "oneOf": [
+            { "type": "string", "format": "uri" },
+            {
+              "type": "object",
+              "properties": {
+                "@id": { "type": "string", "format": "uri" }
+              },
+              "required": ["@id"],
+              "additionalProperties": false
+            }
+          ]
+        }
+  4. Let <var>nestedSchema</var> be { "type": "object" }
+  5. Call <a>processFrameObject</a>(<var>frameObj</var>, <var>nestedSchema</var>, <var>nestedFlags</var>, <var>context</var>)
+  6. Return <var>nestedSchema</var>
+      </pre>
+    </section>
+
+    <section>
+      <h3>Determine Required Status</h3>
+      
+      <pre class="algorithm">
+<dfn>shouldBeRequired</dfn>(<var>key</var>, <var>value</var>, <var>flags</var>)
+
+Arguments:
+  <var>key</var>: Property name
+  <var>value</var>: Property value from frame
+  <var>flags</var>: Framing flags
+
+Returns:
+  true if the property should be required, false otherwise
+
+Steps:
+  1. If <var>flags</var>["requireAll"] is true:
+     1. Return true
+  2. If <var>flags</var>["omitDefault"] is true:
+     1. Return false
+  3. If <var>value</var> is an empty object:
+     1. Return true
+  4. If <var>value</var> is an object or array:
+     1. Return true
+  5. Return false
+      </pre>
+    </section>
+
+    <section>
+      <h3>Helper Functions</h3>
+      
+      <pre class="algorithm">
+<dfn>inferJsonType</dfn>(<var>value</var>)
+
+Arguments:
+  <var>value</var>: A JSON value
+
+Returns:
+  A string representing the JSON type
+
+Steps:
+  1. If <var>value</var> is a boolean, return "boolean"
+  2. If <var>value</var> is an integer, return "integer"
+  3. If <var>value</var> is a number, return "number"
+  4. If <var>value</var> is a string, return "string"
+  5. If <var>value</var> is an array, return "array"
+  6. If <var>value</var> is an object, return "object"
+  7. If <var>value</var> is null, return "null"
+  8. Return "string"
+      </pre>
+    </section>
+  </section>
+
+  <section class="informative">
+    <h2>Examples</h2>
+    
+    <section>
+      <h3>Basic Example</h3>
+      
+      <p>Given the following frame:</p>
+      
+      <pre class="example json" title="Simple Person Frame">
+{
+  "@context": {
+    "name": "http://schema.org/name",
+    "age": {
+      "@id": "http://schema.org/age",
+      "@type": "http://www.w3.org/2001/XMLSchema#integer"
+    }
+  },
+  "@type": "Person",
+  "name": {},
+  "age": {}
+}
+      </pre>
+      
+      <p>The algorithm produces the following schema:</p>
+      
+      <pre class="example json" title="Generated Schema">
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": { "const": "Person" },
+    "name": { "type": "string" },
+    "age": { "type": "integer" }
+  },
+  "required": ["@type", "name", "age"],
+  "additionalProperties": true
+}
+      </pre>
+    </section>
+
+    <section>
+      <h3>Nested Objects with @explicit Flag</h3>
+      
+      <p>Given the following frame with nested objects and the <code>@explicit</code> flag:</p>
+      
+      <pre class="example json" title="Nested Frame">
+{
+  "@type": "Person",
+  "@explicit": true,
+  "name": {},
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": {},
+    "addressLocality": {}
+  }
+}
+      </pre>
+      
+      <p>The algorithm produces:</p>
+      
+      <pre class="example json" title="Generated Schema with Nested Objects">
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": { "const": "Person" },
+    "name": { "type": "string" },
+    "address": {
+      "type": "object",
+      "properties": {
+        "@type": { "const": "PostalAddress" },
+        "streetAddress": { "type": "string" },
+        "addressLocality": { "type": "string" }
+      },
+      "required": ["@type", "streetAddress", "addressLocality"],
+      "additionalProperties": true
+    }
+  },
+  "required": ["@type", "name", "address"],
+  "additionalProperties": false
+}
+      </pre>
+    </section>
+
+    <section>
+      <h3>Non-Embedded References</h3>
+      
+      <p>When <code>@embed</code> is set to false:</p>
+      
+      <pre class="example json" title="Frame with @embed: false">
+{
+  "@type": "Article",
+  "title": {},
+  "author": {
+    "@embed": false,
+    "@type": "Person"
+  }
+}
+      </pre>
+      
+      <p>The algorithm produces a schema that accepts either a URI string or an object with just an @id:</p>
+      
+      <pre class="example json" title="Schema for Non-Embedded References">
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": { "const": "Article" },
+    "title": { "type": "string" },
+    "author": {
+      "oneOf": [
+        { "type": "string", "format": "uri" },
+        {
+          "type": "object",
+          "properties": {
+            "@id": { "type": "string", "format": "uri" }
+          },
+          "required": ["@id"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": ["@type", "title", "author"],
+  "additionalProperties": true
+}
+      </pre>
+    </section>
+
+    <section>
+      <h3>Array Frames</h3>
+      
+      <p>Frame with array notation:</p>
+      
+      <pre class="example json" title="Array Frame">
+{
+  "@type": "Person",
+  "name": {},
+  "knows": [{
+    "@type": "Person",
+    "name": {}
+  }]
+}
+      </pre>
+      
+      <p>Generates an array schema:</p>
+      
+      <pre class="example json" title="Schema with Array">
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "@type": { "const": "Person" },
+    "name": { "type": "string" },
+    "knows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": { "const": "Person" },
+          "name": { "type": "string" }
+        },
+        "required": ["@type", "name"],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["@type", "name", "knows"],
+  "additionalProperties": true
+}
+      </pre>
+    </section>
+  </section>
+
+  <section class="informative">
+    <h2>Mapping Reference</h2>
+    
+    <p>The following table summarizes the key mappings between JSON-LD Framing concepts and JSON Schema constructs:</p>
+    
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Frame Concept</th>
+          <th>JSON Schema Construct</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Frame Object</td>
+          <td><code>type: "object"</code></td>
+          <td>Basic structural mapping</td>
+        </tr>
+        <tr>
+          <td><code>@type</code> (single)</td>
+          <td><code>const</code></td>
+          <td>Exact type match</td>
+        </tr>
+        <tr>
+          <td><code>@type</code> (multiple)</td>
+          <td><code>enum</code></td>
+          <td>One of several types</td>
+        </tr>
+        <tr>
+          <td><code>@id</code> (required)</td>
+          <td><code>type: "string", format: "uri"</code></td>
+          <td>URI validation</td>
+        </tr>
+        <tr>
+          <td><code>@embed: true</code></td>
+          <td>Nested object schema</td>
+          <td>Default behavior</td>
+        </tr>
+        <tr>
+          <td><code>@embed: false</code></td>
+          <td><code>oneOf</code> (URI or @id object)</td>
+          <td>Reference-only</td>
+        </tr>
+        <tr>
+          <td><code>@explicit: true</code></td>
+          <td><code>additionalProperties: false</code></td>
+          <td>Strict validation</td>
+        </tr>
+        <tr>
+          <td><code>@explicit: false</code></td>
+          <td><code>additionalProperties: true</code></td>
+          <td>Default, allows extras</td>
+        </tr>
+        <tr>
+          <td><code>@requireAll: true</code></td>
+          <td>All properties in <code>required</code></td>
+          <td>All must be present</td>
+        </tr>
+        <tr>
+          <td><code>@omitDefault: true</code></td>
+          <td>Properties not in <code>required</code></td>
+          <td>All optional</td>
+        </tr>
+        <tr>
+          <td>Array notation <code>[{...}]</code></td>
+          <td><code>type: "array", items: {...}</code></td>
+          <td>Array of objects</td>
+        </tr>
+        <tr>
+          <td>Empty object <code>{}</code></td>
+          <td>Required property with inferred type</td>
+          <td>Property must be present</td>
+        </tr>
+        <tr>
+          <td>Context type coercion</td>
+          <td>JSON Schema type inference</td>
+          <td>XSD types → JSON types</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="informative">
+    <h2>Implementation Notes</h2>
+    
+    <section>
+      <h3>Context Processing</h3>
+      <p>
+        Implementations SHOULD use existing JSON-LD libraries for context processing to ensure correct
+        handling of context expansion, prefix resolution, and type coercion rules.
+      </p>
+    </section>
+
+    <section>
+      <h3>Error Handling</h3>
+      <p>
+        Implementations SHOULD provide clear error messages when:
+      </p>
+      <ul>
+        <li>The input is not a valid JSON-LD Frame</li>
+        <li>Context processing fails</li>
+        <li>Unsupported framing constructs are encountered</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Circular References</h3>
+      <p>
+        Implementations SHOULD detect and handle circular references in nested frames to avoid
+        infinite recursion. This can be accomplished by tracking the frame processing stack.
+      </p>
+    </section>
+
+    <section>
+      <h3>Schema Validation</h3>
+      <p>
+        Implementations MAY validate generated schemas against the JSON Schema meta-schema to
+        ensure correctness before returning them.
+      </p>
+    </section>
+  </section>
+
+  <section class="informative">
+    <h2>Limitations</h2>
+    
+    <p>The following JSON-LD Framing features have limited or no mapping to JSON Schema:</p>
+    
+    <ul>
+      <li><strong>@graph containers</strong>: The algorithm wraps the frame content in a @context and @graph structure by default, or supports graphOnly mode to output just the object schema. However, more complex @graph container patterns may require custom handling.</li>
+      <li><strong>Language maps</strong>: JSON Schema has no direct equivalent for language-tagged strings</li>
+      <li><strong>@reverse properties</strong>: Reverse relationships don't map naturally to JSON Schema</li>
+      <li><strong>Semantic meaning</strong>: JSON Schema validates structure, not RDF semantics</li>
+      <li><strong>Dynamic behavior</strong>: Framing is a transformation; schemas describe static structure</li>
+    </ul>
+  </section>
+
+  <section class="informative">
+    <h2>Security Considerations</h2>
+    
+    <section>
+      <h3>Context Processing</h3>
+      <p>
+        When processing external contexts referenced by URL, implementations SHOULD implement
+        appropriate security measures including:
+      </p>
+      <ul>
+        <li>Validating HTTPS certificates</li>
+        <li>Setting reasonable timeouts</li>
+        <li>Limiting context document size</li>
+        <li>Caching contexts to prevent repeated network requests</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Recursion Limits</h3>
+      <p>
+        Implementations SHOULD enforce limits on frame nesting depth to prevent stack overflow
+        attacks from maliciously crafted frames.
+      </p>
+    </section>
+  </section>
+
+  <section class="informative">
+    <h2>Privacy Considerations</h2>
+    
+    <p>
+      This specification defines an algorithm for converting frame structures to schemas. The
+      algorithm itself does not introduce privacy concerns beyond those inherent in JSON-LD
+      and JSON Schema usage. Implementations should follow the privacy considerations outlined
+      in the JSON-LD 1.1 specification.
+    </p>
+  </section>
+
+  <section id="conformance"></section>
+</body>
+</html>

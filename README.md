@@ -257,6 +257,7 @@ This will run several examples demonstrating different features of the library.
 
 ## Documentation
 
+- [Formal Specification](https://jeswr.github.io/jsonldframe2schema/spec/) - W3C-style ReSpec specification of the algorithm
 - [MAPPING.md](MAPPING.md) - Formal mapping between JSON-LD Framing and JSON Schema
 - [ALGORITHM.md](ALGORITHM.md) - Algorithmic definition of the conversion process
 
