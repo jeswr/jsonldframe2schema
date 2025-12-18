@@ -4,4 +4,3 @@ black>=23.0.0
 flake8>=6.0.0
 mypy>=1.0.0
 deepdiff>=6.0.0
-python-semantic-release>=8.0.0
