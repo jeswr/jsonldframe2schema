@@ -281,6 +281,56 @@ This will run several examples demonstrating different features of the library.
 pip install -r requirements-dev.txt
 ```
 
+### Releases
+
+This project uses automated semantic versioning and releases to PyPI. Releases are triggered automatically when commits are pushed to the `main` branch.
+
+#### Commit Message Format
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+- `feat:` - New features (triggers minor version bump)
+- `fix:` - Bug fixes (triggers patch version bump)
+- `perf:` - Performance improvements (triggers patch version bump)
+- `docs:` - Documentation changes (no version bump)
+- `style:` - Code style changes (no version bump)
+- `refactor:` - Code refactoring (no version bump)
+- `test:` - Test additions or changes (no version bump)
+- `build:` - Build system changes (no version bump)
+- `ci:` - CI configuration changes (no version bump)
+- `chore:` - Other changes (no version bump)
+
+**Breaking Changes**: Add `BREAKING CHANGE:` in the commit body or use `!` after the type (e.g., `feat!:`) to trigger a major version bump.
+
+#### Example Commits
+
+```bash
+# Minor version bump (0.1.0 -> 0.2.0)
+git commit -m "feat: add support for additional JSON Schema draft versions"
+
+# Patch version bump (0.1.0 -> 0.1.1)
+git commit -m "fix: correct handling of nested frames with @embed"
+
+# Major version bump (0.1.0 -> 1.0.0)
+git commit -m "feat!: change API to return schema object instead of string"
+
+# No version bump
+git commit -m "docs: update README with new examples"
+```
+
+#### Release Configuration
+
+To enable automated releases, the repository maintainer must configure the following secrets in the GitHub repository settings:
+
+1. **`RELEASE_TOKEN`**: A GitHub Personal Access Token (PAT) or GitHub App token with the following permissions:
+   - `contents: write` (for creating releases and pushing version commits)
+   
+   This should be a fine-grained PAT or a workflow-scoped token, not the default `GITHUB_TOKEN`.
+
+2. **`PYPI_API_TOKEN`**: A PyPI API token for publishing packages to PyPI.
+
+The release workflow automatically runs tests and linting before publishing to ensure only tested code is released.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
