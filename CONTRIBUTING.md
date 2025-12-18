@@ -110,13 +110,13 @@ When commits are merged to the `main` branch:
 4. Creates a git tag and GitHub release
 5. Builds and publishes the package to PyPI
 
-**Note**: Only repository maintainers can trigger releases by merging to `main`.
+**Note**: Only repository maintainers can trigger releases by merging to `main`. The release workflow automatically runs all tests and linting checks before publishing to ensure code quality.
 
 ### Required Secrets
 
 The release workflow requires the following secrets to be configured:
 
-- **`RELEASE_TOKEN`**: A workflow-scoped GitHub token (PAT or GitHub App token) with `contents: write` and `id-token: write` permissions
+- **`RELEASE_TOKEN`**: A workflow-scoped GitHub token (PAT or GitHub App token) with `contents: write` permission
 - **`PYPI_API_TOKEN`**: A PyPI API token for publishing packages
 
 ## Code Style
