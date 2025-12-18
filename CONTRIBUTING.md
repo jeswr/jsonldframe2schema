@@ -112,6 +112,13 @@ When commits are merged to the `main` branch:
 
 **Note**: Only repository maintainers can trigger releases by merging to `main`.
 
+### Required Secrets
+
+The release workflow requires the following secrets to be configured:
+
+- **`RELEASE_TOKEN`**: A workflow-scoped GitHub token (PAT or GitHub App token) with `contents: write` and `id-token: write` permissions
+- **`PYPI_API_TOKEN`**: A PyPI API token for publishing packages
+
 ## Code Style
 
 - Follow PEP 8 guidelines

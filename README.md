@@ -318,9 +318,17 @@ git commit -m "feat!: change API to return schema object instead of string"
 git commit -m "docs: update README with new examples"
 ```
 
-#### PyPI Configuration
+#### Release Configuration
 
-To enable automated publishing to PyPI, the repository maintainer must configure the `PYPI_API_TOKEN` secret in the GitHub repository settings with a valid PyPI API token.
+To enable automated releases, the repository maintainer must configure the following secrets in the GitHub repository settings:
+
+1. **`RELEASE_TOKEN`**: A GitHub Personal Access Token (PAT) or GitHub App token with the following permissions:
+   - `contents: write` (for creating releases and pushing version commits)
+   - `id-token: write` (for trusted publishing)
+   
+   This should be a fine-grained PAT or a workflow-scoped token, not the default `GITHUB_TOKEN`.
+
+2. **`PYPI_API_TOKEN`**: A PyPI API token for publishing packages to PyPI.
 
 ## License
 
