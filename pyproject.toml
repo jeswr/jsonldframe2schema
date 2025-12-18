@@ -73,6 +73,8 @@ version_variables = ["jsonldframe2schema/__init__.py:__version__"]
 build_command = "pip install build && python -m build"
 major_on_zero = true
 branch = "main"
+# PyPI publishing is handled by the GitHub Actions workflow (pypa/gh-action-pypi-publish@release/v1),
+# so keep this set to false to avoid duplicate publishing attempts.
 upload_to_pypi = false
 upload_to_release = true
 commit_message = "chore(release): {version} [skip ci]"
