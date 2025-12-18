@@ -94,15 +94,19 @@ jobs:
             echo "Error: dist/ directory not found"
             exit 1
           fi
-          if [ -z "$(ls -A dist/*.whl 2>/dev/null)" ]; then
+          wheel_count=$(find dist -name '*.whl' -type f | wc -l)
+          sdist_count=$(find dist -name '*.tar.gz' -type f | wc -l)
+          if [ "$wheel_count" -eq 0 ]; then
             echo "Error: No wheel file found in dist/"
             exit 1
           fi
-          if [ -z "$(ls -A dist/*.tar.gz 2>/dev/null)" ]; then
+          if [ "$sdist_count" -eq 0 ]; then
             echo "Error: No source distribution found in dist/"
             exit 1
           fi
-          echo "Build artifacts verified successfully"
+          echo "Build artifacts verified successfully:"
+          echo "  - Found $wheel_count wheel file(s)"
+          echo "  - Found $sdist_count source distribution(s)"
           ls -lh dist/
 
       - name: Publish to PyPI
