@@ -307,7 +307,7 @@ This will run several examples demonstrating different features of the library.
 ### Requirements
 
 - Python 3.8+
-- pyld >= 2.0.3
+- pyld >= 2.0.3 (2.x on Python before 3.10; PyLD 3.x requires Python 3.10+)
 - jsonschema >= 4.0.0
 
 ### Development Setup
