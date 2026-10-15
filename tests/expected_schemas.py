@@ -15,7 +15,6 @@ import json
 from pathlib import Path
 from typing import Dict, Any, List
 
-
 # Directory containing the JSON test case files
 EXPECTED_SCHEMAS_DIR = Path(__file__).parent / "expected_schemas"
 

@@ -69,7 +69,12 @@ print(schema)
 #   "properties": {
 #     "@type": {"const": "Person"},
 #     "name": {"type": "string"},
-#     "age": {"type": "integer"}
+#     "age": {
+#       "type": ["integer", "string"],
+#       "minimum": -9007199254740991,
+#       "maximum": 9007199254740991,
+#       "pattern": "^[+-]?[0-9]+(?![\\s\\S])"
+#     }
 #   },
 #   "required": ["@type", "name", "age"],
 #   "additionalProperties": true
@@ -77,6 +82,36 @@ print(schema)
 ```
 
 ## Usage Examples
+
+Context-coerced integer properties accept safe JSON integers or exact signed
+ASCII digit strings. Larger values must use strings, with the datatype supplied
+by the context (for example, `"@type": "xsd:integer"`).
+
+| Context datatype | Accepted JSON integers | Accepted digit strings |
+| --- | --- | --- |
+| `xsd:integer` | -9007199254740991 through 9007199254740991 | Unbounded integer magnitude |
+| `xsd:int` | -2147483648 through 2147483647 | The same signed 32-bit range |
+| `xsd:long` | -9007199254740991 through 9007199254740991 | -9223372036854775808 through 9223372036854775807 |
+
+This intentionally rejects previously accepted unsafe numeric values. For example,
+`9007199254740992` is rejected as an `xsd:integer` number, while
+`"9007199254740992"` is accepted exactly. Both numeric and string representations
+outside the `xsd:int` or `xsd:long` value range are rejected. Signs, negative zero
+and leading zeros are accepted string forms. Fractions, exponents, whitespace
+and trailing newlines are rejected. Standard JSON Schema bounds apply to numbers;
+patterns enforce string ranges without converting strings to numbers.
+
+Callers must create strings before any lossy numeric parsing, retain the context
+datatype coercion, and keep those strings exact downstream. When importing RDF
+with PyLD, use `jsonld.from_rdf(dataset, {"useNativeTypes": False})` to retain
+literal strings. This converter generates schemas; it does not transform input
+data or recover an original value that was already rounded. These bounds apply
+to inference from context for wildcard property frames (`"count": {}`). Existing
+literal-default inference, even with context coercion, and explicit `@value`
+object validation remain unchanged and do not enforce this precision policy.
+Other numeric datatypes remain unchanged. The integer patterns require a regex
+engine supporting ECMA-262 lookahead, as used by the tested Python validator and
+JavaScript RegExp engine; engines such as Go's RE2-based `regexp` do not support these patterns.
 
 ### Example 1: Simple Person Frame
 

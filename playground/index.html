@@ -349,23 +349,75 @@
                 // Load the converter module directly
                 // NOTE: This embeds the FrameToSchemaConverter class from jsonldframe2schema/converter.py
                 // MAINTENANCE: When updating the main library, keep this embedded code in sync
-                await pyodide.runPythonAsync(`
+                await pyodide.runPythonAsync(String.raw`
 import json
 from typing import Any, Dict, List, Optional, Union
 import copy
 
+_JS_SAFE_INTEGER_MAX = 2**53 - 1
+
+
+def _bounded_integer_pattern(minimum: int, maximum: int) -> str:
+    """Match exact integer strings; the bounds must satisfy minimum <= 0 <= maximum."""
+
+    def magnitude_pattern(limit: int) -> str:
+        digits = str(limit)
+        # Any shorter magnitude fits. For equal-length magnitudes, enumerate
+        # the first digit smaller than the limit, then include the limit itself.
+        alternatives = []
+        if len(digits) > 1:
+            alternatives.append(rf"[0-9]{{1,{len(digits) - 1}}}")
+        for index, digit in enumerate(digits):
+            if digit != "0":
+                smaller = "0" if digit == "1" else f"[0-{int(digit) - 1}]"
+                remaining = len(digits) - index - 1
+                suffix = rf"[0-9]{{{remaining}}}" if remaining else ""
+                alternatives.append(digits[:index] + smaller + suffix)
+        alternatives.append(digits)
+        return "(?:" + "|".join(alternatives) + ")"
+
+    # Leading zeros do not affect magnitude; the negative endpoint may have
+    # one greater magnitude than the positive endpoint. Unlike $, the final
+    # assertion rejects trailing newlines in both Python and ECMAScript.
+    positive = magnitude_pattern(maximum)
+    negative = magnitude_pattern(-minimum)
+    return rf"^(?:\+?0*{positive}|-0*{negative})(?![\s\S])"
+
+
 class FrameToSchemaConverter:
-    TYPE_MAPPINGS = {
+    TYPE_MAPPINGS: Dict[str, Dict[str, Any]] = {
         "@id": {"type": "string", "format": "uri"},
         "http://www.w3.org/2001/XMLSchema#string": {"type": "string"},
-        "http://www.w3.org/2001/XMLSchema#integer": {"type": "integer"},
-        "http://www.w3.org/2001/XMLSchema#int": {"type": "integer"},
-        "http://www.w3.org/2001/XMLSchema#long": {"type": "integer"},
+        # Keep numeric values portable to binary64 consumers. Larger values
+        # must use exact lexical strings under the context's datatype coercion.
+        # Numeric bounds and string patterns apply only to their respective
+        # instance types. Bounded datatypes also constrain lexical magnitudes.
+        "http://www.w3.org/2001/XMLSchema#integer": {
+            "type": ["integer", "string"],
+            "minimum": -_JS_SAFE_INTEGER_MAX,
+            "maximum": _JS_SAFE_INTEGER_MAX,
+            "pattern": r"^[+-]?[0-9]+(?![\s\S])",
+        },
+        "http://www.w3.org/2001/XMLSchema#int": {
+            "type": ["integer", "string"],
+            "minimum": -(2**31),
+            "maximum": 2**31 - 1,
+            "pattern": _bounded_integer_pattern(-(2**31), 2**31 - 1),
+        },
+        "http://www.w3.org/2001/XMLSchema#long": {
+            "type": ["integer", "string"],
+            "minimum": -_JS_SAFE_INTEGER_MAX,
+            "maximum": _JS_SAFE_INTEGER_MAX,
+            "pattern": _bounded_integer_pattern(-(2**63), 2**63 - 1),
+        },
         "http://www.w3.org/2001/XMLSchema#boolean": {"type": "boolean"},
         "http://www.w3.org/2001/XMLSchema#double": {"type": "number"},
         "http://www.w3.org/2001/XMLSchema#float": {"type": "number"},
         "http://www.w3.org/2001/XMLSchema#decimal": {"type": "number"},
-        "http://www.w3.org/2001/XMLSchema#dateTime": {"type": "string", "format": "date-time"},
+        "http://www.w3.org/2001/XMLSchema#dateTime": {
+            "type": "string",
+            "format": "date-time",
+        },
         "http://www.w3.org/2001/XMLSchema#date": {"type": "string", "format": "date"},
         "http://www.w3.org/2001/XMLSchema#time": {"type": "string", "format": "time"},
     }

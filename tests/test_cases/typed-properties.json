@@ -19,7 +19,10 @@
             "format": "date-time"
           },
           "attendeeCount": {
-            "type": "integer"
+            "type": ["integer", "string"],
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "pattern": "^[+-]?[0-9]+(?![\\s\\S])"
           }
         },
         "required": ["@type", "name", "startDate", "attendeeCount"],

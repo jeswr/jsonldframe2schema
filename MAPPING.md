@@ -323,7 +323,7 @@ When a frame includes an `@context` with type coercion, the schema can infer JSO
 
 - `@type: @id` → URI string
 - `@type: xsd:string` → string
-- `@type: xsd:integer` → integer
+- `@type: xsd:integer`, `xsd:int`, or `xsd:long` → bounded JSON integer or exact digit string
 - `@type: xsd:boolean` → boolean
 - `@type: xsd:dateTime` → string with date-time format
 
@@ -333,10 +333,52 @@ Context: { "age": { "@type": "xsd:integer" } }
 Frame: { "age": {} }
 → Schema: {
     "properties": {
-      "age": { "type": "integer" }
+      "age": {
+        "type": ["integer", "string"],
+        "minimum": -9007199254740991,
+        "maximum": 9007199254740991,
+        "pattern": "^[+-]?[0-9]+(?![\\s\\S])"
+      }
     }
   }
 ```
+
+The numeric alternative is bounded to JavaScript's safe-integer range,
+`[-9007199254740991, 9007199254740991]`. For `xsd:int`, its narrower
+`[-2147483648, 2147483647]` bounds apply instead. Unsafe numeric values that
+previously passed validation now fail intentionally. Strings carry larger exact
+values when the context supplies the datatype.
+
+String patterns allow an optional sign and ASCII digits, including leading zeros
+and negative zero, with exact end-of-input anchoring. The `xsd:integer` string
+range is unbounded. The `xsd:int` string range is `[-2147483648, 2147483647]`;
+`xsd:long` is `[-9223372036854775808, 9223372036854775807]`. Range patterns compare
+lengths and digit prefixes without parsing instances as numbers. Separate
+positive/negative magnitude limits handle the asymmetric signed endpoints.
+Leading zeros do not count towards magnitude. Out-of-range strings are rejected,
+including signed and zero-padded forms. Fractions, exponents and whitespace are
+not accepted lexical forms for these schemas.
+
+JSON Schema applies `minimum`/`maximum` only to numeric instances and `pattern`
+only to strings; no custom format is required. The patterns require ECMA-262
+lookahead support to reject trailing newlines consistently in Python and
+JavaScript. RE2-based engines without lookahead support cannot compile them.
+Draft 7 and 2020-12 validation and ECMAScript patterns are covered by verification.
+These rules apply where the converter infers types from the context, including
+supported typed containers. Existing literal-default inference (including
+context-typed defaults) and explicit value-object validation remain unchanged;
+these paths do not enforce the precision policy and require separate validation.
+The mappings for `xsd:double`, `xsd:float`, and `xsd:decimal` remain `number`.
+
+Callers must supply strings before lossy parsing, retain datatype coercion in the
+context, avoid downstream native-number conversion, and use `useNativeTypes: false`
+when serializing RDF as JSON-LD. Schema generation does not transform values or
+repair information already lost before validation.
+
+See [JSON-LD 1.1 Data Round Tripping](https://www.w3.org/TR/json-ld11-api/#data-round-tripping)
+and the XSD definitions of [integer](https://www.w3.org/TR/xmlschema11-2/#integer),
+[int](https://www.w3.org/TR/xmlschema11-2/#int), and
+[long](https://www.w3.org/TR/xmlschema11-2/#long).
 
 ## Special Cases and Limitations
 

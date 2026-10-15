@@ -406,9 +406,9 @@ Steps:
   2. Let <var>mapping</var> be the type mapping for <var>contextType</var>:
      - "@id" → { "type": "string", "format": "uri" }
      - "http://www.w3.org/2001/XMLSchema#string" → { "type": "string" }
-     - "http://www.w3.org/2001/XMLSchema#integer" → { "type": "integer" }
-     - "http://www.w3.org/2001/XMLSchema#int" → { "type": "integer" }
-     - "http://www.w3.org/2001/XMLSchema#long" → { "type": "integer" }
+     - "http://www.w3.org/2001/XMLSchema#integer" → {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": "^[+-]?[0-9]+(?![\\s\\S])"}
+     - "http://www.w3.org/2001/XMLSchema#int" → {"type": ["integer", "string"], "minimum": -2147483648, "maximum": 2147483647, "pattern": boundedIntegerPattern(-2147483648, 2147483647)}
+     - "http://www.w3.org/2001/XMLSchema#long" → {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": boundedIntegerPattern(-9223372036854775808, 9223372036854775807)}
      - "http://www.w3.org/2001/XMLSchema#boolean" → { "type": "boolean" }
      - "http://www.w3.org/2001/XMLSchema#double" → { "type": "number" }
      - "http://www.w3.org/2001/XMLSchema#float" → { "type": "number" }
@@ -419,6 +419,14 @@ Steps:
   3. If <var>mapping</var> exists for <var>contextType</var>, return <var>mapping</var>
   4. Return { "type": "string" }
       </pre>
+      <p>Numeric bounds apply only to numbers; patterns apply only to strings.
+      Unsafe native integers are rejected. For bounded strings,
+      <code>boundedIntegerPattern(minimum, maximum)</code> builds separate positive
+      and negative magnitude alternatives: fewer digits than the bound, the
+      first differing digit smaller than the bound, or the bound itself.
+      Optional plus signs and leading zeros are permitted. The complete pattern
+      is anchored at the start and exact end of the string. No conversion of
+      instance strings to native numbers is required.</p>
     </section>
 
     <section>
@@ -580,7 +588,7 @@ Steps:
         "properties": {
           "@type": { "const": "Person" },
           "name": { "type": "string" },
-          "age": { "type": "integer" }
+          "age": {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": "^[+-]?[0-9]+(?![\\s\\S])"}
         },
         "required": ["@type", "name", "age"],
         "additionalProperties": true

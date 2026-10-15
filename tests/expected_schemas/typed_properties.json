@@ -28,7 +28,7 @@
           "type": "object",
           "properties": {
             "@type": { "const": "ex:Person" },
-            "ex:age": { "type": "integer" },
+            "ex:age": {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": "^[+-]?[0-9]+(?![\\s\\S])"},
             "ex:height": { "type": "number" },
             "ex:active": { "type": "boolean" },
             "ex:birthDate": { "type": "string", "format": "date" }
