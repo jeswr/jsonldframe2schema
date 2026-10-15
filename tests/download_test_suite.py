@@ -18,7 +18,6 @@ from pathlib import Path
 from pyld import jsonld
 from rdflib import Graph, Namespace
 
-
 BASE_URL = "https://w3c.github.io/json-ld-framing/tests/"
 FRAME_MANIFEST_URL = BASE_URL + "frame-manifest.jsonld"
 TEST_SUITE_DIR = Path(__file__).parent / "jsonld_test_suite"

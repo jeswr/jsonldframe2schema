@@ -365,9 +365,9 @@ function inferTypeFromContext(key, contextType):
     typeMapping = {
         "@id": { "type": "string", "format": "uri" },
         "xsd:string": { "type": "string" },
-        "xsd:integer": { "type": "integer" },
-        "xsd:int": { "type": "integer" },
-        "xsd:long": { "type": "integer" },
+        "xsd:integer": {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": "^[+-]?[0-9]+(?![\\s\\S])"},
+        "xsd:int": {"type": ["integer", "string"], "minimum": -2147483648, "maximum": 2147483647, "pattern": boundedIntegerPattern(-2147483648, 2147483647)},
+        "xsd:long": {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": boundedIntegerPattern(-9223372036854775808, 9223372036854775807)},
         "xsd:boolean": { "type": "boolean" },
         "xsd:double": { "type": "number" },
         "xsd:float": { "type": "number" },
@@ -382,6 +382,18 @@ function inferTypeFromContext(key, contextType):
     
     return { "type": "string" }
 ```
+
+For integer mappings, `minimum` and `maximum` constrain only numeric instances;
+`pattern` constrains only string instances. Unsafe native integers are rejected.
+
+`boundedIntegerPattern(minimum, maximum)` builds a regular expression without
+converting the instance to a number. For each endpoint magnitude, accept a
+shorter digit sequence, an equal-length sequence whose first differing digit is
+smaller, or the endpoint itself. Prefix the positive alternatives with an
+optional `+` and the negative alternatives with `-`; permit any number of leading
+zeros in both branches. Anchor the combined expression at the start and exact
+end of the string. Use the positive and negative XSD endpoints separately.
+This keeps bounded strings exact while permitting noncanonical signs and zeros.
 
 ### 8. Process Array Frame
 
@@ -523,7 +535,7 @@ function inferJsonType(value):
 2. Extract context: `{name: null, age: "xsd:integer"}`
 3. Process @type: Creates `"@type": {"const": "Person"}` and adds to required
 4. Process "name": Creates `"name": {"type": "string"}` and adds to required
-5. Process "age": Uses context to create `"age": {"type": "integer"}` and adds to required
+5. Process "age": Uses context to create `"age": {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": "^[+-]?[0-9]+(?![\\s\\S])"}` and adds to required
 6. Apply flags: Sets `additionalProperties: true`
 
 **Output Schema (with graphOnly=true):**
@@ -534,7 +546,7 @@ function inferJsonType(value):
   "properties": {
     "@type": {"const": "Person"},
     "name": {"type": "string"},
-    "age": {"type": "integer"}
+    "age": {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": "^[+-]?[0-9]+(?![\\s\\S])"}
   },
   "required": ["@type", "name", "age"],
   "additionalProperties": true
@@ -555,7 +567,7 @@ function inferJsonType(value):
         "properties": {
           "@type": {"const": "Person"},
           "name": {"type": "string"},
-          "age": {"type": "integer"}
+          "age": {"type": ["integer", "string"], "minimum": -9007199254740991, "maximum": 9007199254740991, "pattern": "^[+-]?[0-9]+(?![\\s\\S])"}
         },
         "required": ["@type", "name", "age"],
         "additionalProperties": true

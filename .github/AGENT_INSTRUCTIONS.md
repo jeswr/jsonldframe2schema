@@ -294,7 +294,7 @@ JSON Schema is a vocabulary for annotating and validating JSON documents.
 |------|-------------|-----------------|
 | `string` | Text values | `xsd:string`, plain literals |
 | `number` | Any numeric | `xsd:float`, `xsd:double`, `xsd:decimal` |
-| `integer` | Whole numbers | `xsd:integer`, `xsd:int`, `xsd:long` |
+| `integer` | Safe whole numbers | Numeric forms of `xsd:integer`, `xsd:int`, `xsd:long`; exact strings are also accepted (see 6.2) |
 | `boolean` | true/false | `xsd:boolean` |
 | `null` | null value | Null/missing values |
 | `array` | Ordered list | `@list`, `@set`, multi-values |
@@ -1088,9 +1088,9 @@ The converter needs to track context scope when processing nested frames.
 | XSD Type | JSON Schema |
 |----------|-------------|
 | `xsd:string` | `{"type": "string"}` |
-| `xsd:integer` | `{"type": "integer"}` |
-| `xsd:int` | `{"type": "integer"}` |
-| `xsd:long` | `{"type": "integer"}` |
+| `xsd:integer` | Integer numbers within ±9007199254740991, or exact unbounded signed digit strings |
+| `xsd:int` | Integer numbers or signed digit strings within [-2147483648, 2147483647] |
+| `xsd:long` | Integer numbers within ±9007199254740991, or signed digit strings within [-9223372036854775808, 9223372036854775807] |
 | `xsd:boolean` | `{"type": "boolean"}` |
 | `xsd:double` | `{"type": "number"}` |
 | `xsd:float` | `{"type": "number"}` |
@@ -1100,6 +1100,12 @@ The converter needs to track context scope when processing nested frames.
 | `xsd:time` | `{"type": "string", "format": "time"}` |
 | `xsd:anyURI` | `{"type": "string", "format": "uri"}` |
 | `@id` | `{"type": "string", "format": "uri"}` |
+
+Integer string patterns accept optional signs and leading zeros without numeric
+conversion. They require ECMA-262 lookahead support. Keep the playground embedded
+helper and mappings in sync with the library. These context-inferred rules do not
+redesign existing literal-default or explicit value-object validation. See
+[MAPPING.md](../MAPPING.md#context-aware-type-mappings) for details.
 
 ---
 
@@ -1131,6 +1137,7 @@ When making changes, document decisions here:
 | Initial | Use `oneOf` for embed=false | Allows URI string or ID object |
 | Initial | Default to additionalProperties: true | Matches @explicit: false default |
 | Initial | Property in frame = required | Frame implies expectation |
+| 2026-10-15 | Bound native integer forms and allow exact digit strings | Avoid binary64 precision loss; preserve XSD int/long bounds without numeric conversion |
 
 ---
 
